@@ -5,48 +5,37 @@
 <title>MiniChat – Discord Style</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-* { box-sizing:border-box; }
-body {
-  margin:0; height:100vh; font-family:Inter,sans-serif; background:#1e1f22; color:#dbdee1; display:flex;
-}
-#app { display:flex; width:100%; height:100%; }
-/* SIDEBAR */
-#sidebar { width:240px; background:#2b2d31; padding:12px; display:flex; flex-direction:column; }
-.room { padding:10px; border-radius:6px; margin-bottom:4px; cursor:pointer; }
-.room:hover { background:#404249; }
-/* MAIN */
-#main { flex:1; display:flex; flex-direction:column; }
-/* HEADER */
-#header { height:48px; background:#313338; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-bottom:1px solid #1f2023; }
-#headerLeft { display:flex; align-items:center; gap:10px; }
-#header button { background:none; border:none; color:#dbdee1; cursor:pointer; font-size:14px; }
-#header button:hover { color:#fff; }
-/* CHAT */
-#chat { flex:1; padding:16px; overflow-y:auto; }
-.message { margin-bottom:14px; }
-.message b { color:#fff; }
-.time { font-size:11px; color:#949ba4; margin-left:6px; }
-/* TYPING */
-#typing { height:18px; font-size:12px; color:#949ba4; padding-left:16px; }
-/* INPUT */
-#inputBar { padding:12px; background:#383a40; border-top:1px solid #1f2023; }
-#inputBar input { width:100%; padding:12px; border-radius:8px; border:none; background:#1e1f22; color:#dbdee1; }
-/* USERS */
-#users { width:220px; background:#2b2d31; padding:12px; transition:.25s; }
-#users.hidden { width:0; padding:0; overflow:hidden; }
-/* HOME */
-#home { position:absolute; inset:0; background:#1e1f22; display:flex; }
-#homeLeft { width:240px; background:#2b2d31; padding:12px; }
-#homeCenter { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-#homeCenter input, #homeCenter button { width:300px; padding:14px; margin-bottom:12px; border-radius:8px; border:none; }
-#homeCenter input { background:#2b2d31; color:#fff; }
-#homeCenter button { background:#5865f2; color:#fff; font-weight:600; cursor:pointer; }
+*{box-sizing:border-box;}
+body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color:#dbdee1;display:flex;}
+#app{display:flex;width:100%;height:100%;}
+#sidebar{width:240px;background:#2b2d31;padding:12px;display:flex;flex-direction:column;}
+.room{padding:10px;border-radius:6px;margin-bottom:4px;cursor:pointer;}
+.room:hover{background:#404249;}
+#main{flex:1;display:flex;flex-direction:column;}
+#header{height:48px;background:#313338;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #1f2023;}
+#headerLeft{display:flex;align-items:center;gap:10px;}
+#header button{background:none;border:none;color:#dbdee1;cursor:pointer;font-size:14px;}
+#header button:hover{color:#fff;}
+#chat{flex:1;padding:16px;overflow-y:auto;}
+.message{margin-bottom:14px;}
+.message b{color:#fff;}
+.time{font-size:11px;color:#949ba4;margin-left:6px;}
+#typing{height:18px;font-size:12px;color:#949ba4;padding-left:16px;}
+#inputBar{padding:12px;background:#383a40;border-top:1px solid #1f2023;display:flex;gap:6px;}
+#inputBar input{flex:1;padding:12px;border-radius:8px;border:none;background:#1e1f22;color:#dbdee1;}
+#inputBar input[type=file]{flex:none;}
+#users{width:220px;background:#2b2d31;padding:12px;transition:.25s;}
+#users.hidden{width:0;padding:0;overflow:hidden;}
+#home{position:absolute;inset:0;background:#1e1f22;display:flex;}
+#homeLeft{width:240px;background:#2b2d31;padding:12px;}
+#homeCenter{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+#homeCenter input,#homeCenter button{width:300px;padding:14px;margin-bottom:12px;border-radius:8px;border:none;}
+#homeCenter input{background:#2b2d31;color:#fff;}
+#homeCenter button{background:#5865f2;color:#fff;font-weight:600;cursor:pointer;}
 </style>
 </head>
 <body>
 <div id="app">
-
-<!-- HOME -->
 <div id="home">
   <div id="homeLeft"><div id="roomList"></div></div>
   <div id="homeCenter">
@@ -55,10 +44,8 @@ body {
   </div>
 </div>
 
-<!-- SIDEBAR -->
 <div id="sidebar"></div>
 
-<!-- MAIN -->
 <div id="main">
   <div id="header">
     <div id="headerLeft">
@@ -71,28 +58,34 @@ body {
   <div id="typing"></div>
   <div id="inputBar">
     <input id="msg" placeholder="Message...">
+    <input type="file" id="fileInput">
   </div>
 </div>
 
-<!-- USERS -->
 <div id="users" class="hidden">
   <b>Online</b>
   <div id="userList"></div>
 </div>
-
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const app = initializeApp({ apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc", projectId:"chat-fc8ef" });
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 let room="", nick="", unsub;
 
 const chat=document.getElementById("chat");
 const typingEl=document.getElementById("typing");
+const msg=document.getElementById("msg");
+const fileInput=document.getElementById("fileInput");
+
+// Persistointi
+document.getElementById("nick").value = localStorage.getItem("nick") || "";
 
 /* LOAD ROOMS */
 async function loadRooms(){
@@ -112,7 +105,7 @@ loadRooms();
 async function join(r){
   const pass=prompt("Password");
   if(pass===null) return;
-  nick=document.getElementById("nick").value||"Anon";
+  nick=document.getElementById("nick").value||("Anon"+Math.floor(Math.random()*1000));
   localStorage.setItem("nick",nick);
 
   const ref=doc(db,"rooms",r);
@@ -128,6 +121,7 @@ async function join(r){
   await setDoc(userRef,{online:true});
   window.addEventListener("beforeunload",()=>deleteDoc(userRef));
 
+  // Online-lista
   onSnapshot(collection(db,"rooms",room,"users"),s=>{
     userList.innerHTML="";
     s.forEach(u=>{
@@ -137,33 +131,75 @@ async function join(r){
     });
   });
 
+  // Typing status per user
+  const typingRef = collection(db,"rooms",room,"typing");
+  onSnapshot(typingRef,s=>{
+    const arr=[];
+    s.forEach(doc=>{ if(doc.id!==nick && doc.data().typing) arr.push(doc.id); });
+    typingEl.textContent=arr.length>0 ? arr.join(", ")+" is typing..." : "";
+  });
+
+  // Messages
   const q=query(collection(db,"rooms",r,"messages"),orderBy("time"));
   unsub=onSnapshot(q,s=>{
     chat.innerHTML="";
     s.forEach(d=>{
       const m=d.data();
       const t=m.time?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      chat.innerHTML+=`<div class="message"><b>${m.name}</b><span class="time">${t||""}</span><div>${m.text}</div></div>`;
+      if(m.type==="file")
+        chat.innerHTML+=`<div class="message"><b>${m.name}</b><span class="time">${t||""}</span><div><a href="${m.text}" target="_blank">📎 File</a></div></div>`;
+      else
+        chat.innerHTML+=`<div class="message"><b>${m.name}</b><span class="time">${t||""}</span><div>${m.text}</div></div>`;
+      // Notification
+      if(Notification.permission==="granted" && m.name!==nick) new Notification(`${m.name}: ${m.text}`);
     });
-    chat.scrollTop=chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
   });
 }
 
-/* SEND MESSAGE */
-msg.addEventListener("keydown",e=>{
+/* SEND MESSAGE & COMMANDS */
+msg.addEventListener("keydown", async e=>{
   if(e.key==="Enter" && msg.value){
-    addDoc(collection(db,"rooms",room,"messages"),{name:nick,text:msg.value,time:serverTimestamp()});
+    const text=msg.value.trim();
+    if(text.startsWith("/clear")){
+      const msgs = await getDocs(collection(db,"rooms",room,"messages"));
+      msgs.forEach(async m=>await deleteDoc(doc(db,"rooms",room,"messages",m.id)));
+      msg.value=""; return;
+    }
+    if(text.startsWith("/deleteroom")){
+      const msgs = await getDocs(collection(db,"rooms",room,"messages"));
+      msgs.forEach(async m=>await deleteDoc(doc(db,"rooms",room,"messages",m.id)));
+      await deleteDoc(doc(db,"rooms",room));
+      home.style.display="flex";
+      unsub();
+      msg.value=""; return;
+    }
+    addDoc(collection(db,"rooms",room,"messages"),{name:nick,text:text,time:serverTimestamp()});
     msg.value="";
   } else {
-    typingEl.textContent=nick+" is typing...";
-    setTimeout(()=>typingEl.textContent="",1200);
+    setDoc(doc(db,"rooms",room,"typing",nick),{typing:msg.value.length>0});
+    setTimeout(()=>setDoc(doc(db,"rooms",room,"typing",nick),{typing:false}),1200);
   }
 });
 
-/* UI EVENTS */
+/* FILE UPLOAD */
+fileInput.addEventListener("change", async e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const fileRef = ref(storage, `rooms/${room}/${file.name}`);
+  await uploadBytes(fileRef,file);
+  const url = await getDownloadURL(fileRef);
+  addDoc(collection(db,"rooms",room,"messages"),{name:nick,text:url,time:serverTimestamp(),type:"file"});
+  fileInput.value="";
+});
+
+/* UI */
 back.onclick=()=>{ if(unsub) unsub(); home.style.display="flex"; };
 toggleUsers.onclick=()=>users.classList.toggle("hidden");
 createRoom.onclick=()=>{ const r=prompt("Room name"); if(r) join(r); };
+
+// Notification permission
+if(Notification.permission!=="granted") Notification.requestPermission();
 </script>
 </body>
 </html>
