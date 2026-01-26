@@ -5,6 +5,7 @@
 <title>MiniChat – Discord Style</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* sama CSS kuin aiemmin, ei muutosta */
 *{box-sizing:border-box;}
 body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color:#dbdee1;display:flex;}
 #app{display:flex;width:100%;height:100%;}
@@ -73,7 +74,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-const app = initializeApp({ apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc", projectId:"chat-fc8ef" });
+// ← Muutettu storageBucket valmiiksi oikein
+const app = initializeApp({
+  apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+  projectId:"chat-fc8ef",
+  storageBucket: "chat-fc8ef.appspot.com"
+});
+
 const db = getFirestore(app);
 const storage = getStorage(app);
 
