@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini Chat SPA</title>
+<title>🔥 Mini Chat SPA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
+/* Perusasetukset */
 body {
   margin:0;
   font-family:'Inter',sans-serif;
@@ -18,95 +19,146 @@ body {
 
 #container {
   display:flex;
-  flex-direction:column;
   width:90%;
-  max-width:900px;
-  height:80%; /* hieman pienempi kuin näyttö */
+  max-width:1000px;
+  height:80vh;
+  background:#1e1f22;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
 }
 
-h1 {
-  margin:0 0 15px 0;
-  font-size:1.8rem;
+/* Vasemmanpuoleinen valikko */
+#homeView, #roomList {
+  display:flex;
+  flex-direction:column;
+}
+
+#sidebar {
+  width:250px;
+  background:#242526;
+  padding:15px;
+  display:flex;
+  flex-direction:column;
+}
+
+#sidebar h2 {
+  margin:0 0 10px 0;
+  font-size:1.2rem;
   text-align:center;
 }
 
-.hidden { display:none; }
-
-input, button {
+#nick {
+  margin-bottom:15px;
   padding:10px;
-  margin-top:10px;
   border-radius:6px;
   border:none;
-  width:100%;
-  font-size:1rem;
+  background:#3a3b3e;
+  color:#eee;
 }
 
-input { background:#242526; color:#eee; }
-button { background:#4b9ce2; color:#fff; cursor:pointer; font-weight:600; transition:0.2s; }
-button:hover { background:#3a8ad1; }
+.room {
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:6px;
+  background:#2a2b2d;
+  cursor:pointer;
+  transition:0.2s;
+  text-align:center;
+}
+.room:hover {
+  background:#4b9ce2;
+  color:#000;
+}
 
-/* CHAT PAGE */
+/* Oikea chat-alue */
+#chatView {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:15px;
+  background:#18191a;
+}
+
+#title {
+  margin:0 0 10px 0;
+  text-align:center;
+  font-size:1.6rem;
+  font-weight:600;
+}
+
 #chatContainer {
   display:flex;
   flex-direction:column;
   flex:1;
-  height:100%;
 }
 
 #chat {
-  height:65vh; /* kiinteä korkeus, ei muutu */
-  overflow-y:auto;
+  flex:1;
   background:#242526;
-  padding:10px;
   border-radius:8px;
-  display:flex;
-  flex-direction:column;
-  margin-bottom:10px; /* tilaa tekstikentälle */
+  padding:15px;
+  overflow-y:auto;
+  margin-bottom:10px;
 }
 
-.message { margin-bottom:8px; word-wrap:break-word; }
+.message { margin-bottom:10px; word-wrap:break-word; }
 .message b { color:#4b9ce2; }
 
 #chatControls {
   display:flex;
-  flex-direction:column;
+  gap:10px;
 }
 
-#chatControls input { margin-bottom:5px; box-sizing:border-box; }
+#chatControls input {
+  flex:1;
+  padding:10px;
+  border-radius:6px;
+  border:none;
+  background:#3a3b3e;
+  color:#eee;
+}
 
+#chatControls button {
+  padding:10px 15px;
+  border-radius:6px;
+  border:none;
+  background:#4b9ce2;
+  color:#fff;
+  cursor:pointer;
+  font-weight:600;
+  transition:0.2s;
+}
+#chatControls button:hover { background:#3a8ad1; }
 #backBtn { background:#e04b4b; }
 #backBtn:hover { background:#c33a3a; }
 
-.room {
-  padding:8px;
-  margin-bottom:5px;
-  border-radius:5px;
-  background:#2a2b2d;
-  cursor:pointer;
-  transition:0.2s;
+/* Mobile-friendly */
+@media(max-width:800px){
+  #container { flex-direction:column; height:90vh; }
+  #sidebar { width:100%; flex-direction:row; overflow-x:auto; padding:5px; }
+  .room { flex:1; margin:0 5px 0 0; }
 }
-.room:hover { background:#4b9ce2; color:#000; }
 </style>
 </head>
 <body>
 <div id="container">
-  <h1 id="title">🔥 Mini Chat</h1>
-
-  <!-- HOME / ROOM SELECTION -->
-  <div id="homeView">
-    <input id="nick" placeholder="Choose your nickname">
-    <h3>Available Rooms</h3>
+  <!-- Vasen sivupalkki -->
+  <div id="sidebar">
+    <h2>Rooms</h2>
+    <input id="nick" placeholder="Nickname">
     <div id="roomList"></div>
-    <button id="createRoomBtn">Create Room</button>
+    <button id="createRoomBtn">+ Create Room</button>
   </div>
 
-  <!-- ROOM CHAT -->
+  <!-- Chat-alue -->
   <div id="chatView" class="hidden">
+    <h1 id="title">🔥 Mini Chat</h1>
     <div id="chatContainer">
       <div id="chat"></div>
       <div id="chatControls">
         <input id="msg" placeholder="Type a message (Enter = send)">
-        <button id="backBtn">Return to Rooms</button>
+        <button id="backBtn">Return</button>
       </div>
     </div>
   </div>
@@ -190,9 +242,7 @@ async function joinRoom(roomName,password){
     await setDoc(roomRef,{roomExpiresAt:new Date(now+day)},{merge:true});
   }
 
-  document.getElementById("homeView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
-  document.getElementById("title").innerText=`🔥 Room: ${roomName}`;
 
   // Load chat realtime
   const q = query(collection(db,"rooms",roomName,"messages"),orderBy("time"));
@@ -238,8 +288,6 @@ document.getElementById("backBtn").addEventListener("click",()=>{
   if(unsub) unsub();
   unsub=null;
   document.getElementById("chatView").classList.add("hidden");
-  document.getElementById("homeView").classList.remove("hidden");
-  document.getElementById("title").innerText="🔥 Mini Chat";
   loadRooms();
 });
 </script>
