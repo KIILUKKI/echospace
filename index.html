@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Mini Chat SPA</title>
-<link href="https://fonts.googleapis.com" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
 body {
   margin:0;
@@ -15,34 +15,25 @@ body {
   justify-content:center;
   align-items:center;
 }
-#container { 
-  display:flex; 
-  flex-direction:column; 
-  width:90%; 
-  max-width:600px; /* Kapeampi leveys */
-  height:90vh;     /* Lähes koko näytön korkeus */
-}
-h1 { margin:0 0 15px 0; font-size:1.8rem; text-align:center; flex-shrink: 0; }
+#container { display:flex; flex-direction:column; width:90%; max-width:900px; height:90%; }
+h1 { margin:0 0 15px 0; font-size:1.8rem; text-align:center; }
 .hidden { display:none; }
 
-input, button { padding:10px; margin-top:10px; border-radius:6px; border:none; width:100%; font-size:1rem; box-sizing: border-box; }
-input { background:#242526; color:#eee; border: 1px solid #3a3b3c; }
+input, button { padding:10px; margin-top:10px; border-radius:6px; border:none; width:100%; font-size:1rem; }
+input { background:#242526; color:#eee; }
 button { background:#4b9ce2; color:#fff; cursor:pointer; font-weight:600; transition:0.2s; }
 button:hover { background:#3a8ad1; }
 
-#homeView { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-#roomList { flex: 1; overflow-y: auto; background: #242526; padding: 10px; border-radius: 8px; }
-
-#chatView { display:flex; flex-direction:column; height:100%; overflow: hidden; }
-#chatContainer { display:flex; flex-direction:column; flex:1; height:100%; overflow: hidden; }
+/* CHAT PAGE */
+#chatContainer { display:flex; flex-direction:column; flex:1; height:100%; }
 #chat { flex:1; overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column; }
 .message { margin-bottom:8px; word-wrap:break-word; }
 .message b { color:#4b9ce2; }
-#chatControls { display:flex; flex-direction:column; margin-top:5px; flex-shrink: 0; }
+#chatControls { display:flex; flex-direction:column; margin-top:5px; }
 #chatControls input { margin-bottom:5px; }
 #backBtn { background:#e04b4b; }
 #backBtn:hover { background:#c33a3a; }
-.room { padding:12px; margin-bottom:8px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
+.room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
 .room:hover { background:#4b9ce2; color:#000; }
 </style>
 </head>
@@ -50,6 +41,7 @@ button:hover { background:#3a8ad1; }
 <div id="container">
   <h1 id="title">🔥 Mini Chat</h1>
 
+  <!-- HOME / ROOM SELECTION -->
   <div id="homeView">
     <input id="nick" placeholder="Choose your nickname">
     <h3>Available Rooms</h3>
@@ -57,6 +49,7 @@ button:hover { background:#3a8ad1; }
     <button id="createRoomBtn">Create Room</button>
   </div>
 
+  <!-- ROOM CHAT -->
   <div id="chatView" class="hidden">
     <div id="chatContainer">
       <div id="chat"></div>
@@ -69,13 +62,12 @@ button:hover { background:#3a8ad1; }
 </div>
 
 <script type="module">
-// Käytetään esm.run linkkejä CORS-ongelmien välttämiseksi
-import { initializeApp } from "https://esm.run";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc, deleteDoc,
   collection, addDoc, getDocs, query, orderBy,
   onSnapshot, serverTimestamp
-} from "https://esm.run";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
@@ -95,11 +87,14 @@ const roomList = document.getElementById("roomList");
 const msgInput = document.getElementById("msg");
 const nickInput = document.getElementById("nick");
 
+// Load nickname from localStorage
 let nick = localStorage.getItem("nick") || "";
 if(nick) nickInput.value = nick;
 
+// ENTER = send
 msgInput.addEventListener("keydown", e=>{ if(e.key==="Enter") send(); });
 
+// Load rooms
 async function loadRooms(){
   roomList.innerHTML="";
   const roomsSnap = await getDocs(collection(db,"rooms"));
@@ -117,6 +112,7 @@ async function loadRooms(){
 }
 loadRooms();
 
+// Create new room
 document.getElementById("createRoomBtn").addEventListener("click", async ()=>{
   const roomName = prompt("Enter new room name");
   if(!roomName) return;
@@ -125,10 +121,13 @@ document.getElementById("createRoomBtn").addEventListener("click", async ()=>{
   joinRoom(roomName,pass);
 });
 
+// Join room
 async function joinRoom(roomName,password){
   nick = nickInput.value.trim()||"Anon";
+  if(!nick){ alert("Enter nickname"); return; }
   localStorage.setItem("nick",nick);
   currentRoom=roomName;
+
   const roomRef = doc(db,"rooms",roomName);
   const snap = await getDoc(roomRef);
   const now=Date.now();
@@ -139,9 +138,12 @@ async function joinRoom(roomName,password){
     if(snap.data().password!==password){ alert("Wrong password"); return; }
     await setDoc(roomRef,{roomExpiresAt:new Date(now+day)},{merge:true});
   }
+
   document.getElementById("homeView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
   document.getElementById("title").innerText=`🔥 Room: ${roomName}`;
+
+  // Load chat realtime
   const q = query(collection(db,"rooms",roomName,"messages"),orderBy("time"));
   unsub = onSnapshot(q,snap=>{
     chat.innerHTML="";
@@ -153,6 +155,7 @@ async function joinRoom(roomName,password){
   });
 }
 
+// Send message
 async function send(){
   const text=msgInput.value.trim();
   if(!text) return;
@@ -169,6 +172,7 @@ async function send(){
     await deleteDoc(doc(db,"rooms",currentRoom));
     location.reload(); return;
   }
+
   await addDoc(collection(db,"rooms",currentRoom,"messages"),{
     name:nick,
     text,
@@ -178,6 +182,7 @@ async function send(){
   msgInput.value="";
 }
 
+// Back button
 document.getElementById("backBtn").addEventListener("click",()=>{
   if(unsub) unsub();
   unsub=null;
