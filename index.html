@@ -24,17 +24,20 @@ input { background:#242526; color:#eee; }
 button { background:#4b9ce2; color:#fff; cursor:pointer; font-weight:600; transition:0.2s; }
 button:hover { background:#3a8ad1; }
 
-/* CHAT PAGE */
-#chatContainer { display:flex; flex-direction:column; flex:1; height:100%; }
-#chat { flex:1; overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column; }
+/* Home rooms */
+.room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
+.room:hover { background:#4b9ce2; color:#000; }
+
+/* Chat page */
+#chatView { display:flex; flex-direction:column; height:100%; }
+#chatContainer { display:flex; flex-direction:column; flex:1; }
+#chat { flex:0 0 500px; /* fixed height */ overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column; }
 .message { margin-bottom:8px; word-wrap:break-word; }
 .message b { color:#4b9ce2; }
 #chatControls { display:flex; flex-direction:column; margin-top:5px; }
 #chatControls input { margin-bottom:5px; }
 #backBtn { background:#e04b4b; }
 #backBtn:hover { background:#c33a3a; }
-.room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
-.room:hover { background:#4b9ce2; color:#000; }
 </style>
 </head>
 <body>
@@ -49,7 +52,7 @@ button:hover { background:#3a8ad1; }
     <button id="createRoomBtn">Create Room</button>
   </div>
 
-  <!-- ROOM CHAT -->
+  <!-- CHAT VIEW -->
   <div id="chatView" class="hidden">
     <div id="chatContainer">
       <div id="chat"></div>
@@ -87,7 +90,7 @@ const roomList = document.getElementById("roomList");
 const msgInput = document.getElementById("msg");
 const nickInput = document.getElementById("nick");
 
-// Load nickname from localStorage
+// Persistent nickname
 let nick = localStorage.getItem("nick") || "";
 if(nick) nickInput.value = nick;
 
@@ -112,7 +115,7 @@ async function loadRooms(){
 }
 loadRooms();
 
-// Create new room
+// Create room button
 document.getElementById("createRoomBtn").addEventListener("click", async ()=>{
   const roomName = prompt("Enter new room name");
   if(!roomName) return;
@@ -143,7 +146,7 @@ async function joinRoom(roomName,password){
   document.getElementById("chatView").classList.remove("hidden");
   document.getElementById("title").innerText=`🔥 Room: ${roomName}`;
 
-  // Load chat realtime
+  // Load chat
   const q = query(collection(db,"rooms",roomName,"messages"),orderBy("time"));
   unsub = onSnapshot(q,snap=>{
     chat.innerHTML="";
@@ -151,7 +154,7 @@ async function joinRoom(roomName,password){
       const m = d.data();
       chat.innerHTML+=`<div class="message"><b>${m.name}:</b> ${m.text}</div>`;
     });
-    chat.scrollTop=chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
   });
 }
 
