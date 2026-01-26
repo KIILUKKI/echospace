@@ -1,260 +1,309 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DC Chat</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiniChat – Discord Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-*{box-sizing:border-box;font-family:system-ui}
-body{
+* { box-sizing:border-box; }
+
+body {
   margin:0;
   height:100vh;
+  font-family:Inter, sans-serif;
   background:#1e1f22;
-  color:#fff;
+  color:#dbdee1;
   display:flex;
 }
 
 /* ===== LAYOUT ===== */
-#rooms{
-  width:220px;
-  background:#111214;
-  padding:10px;
-  border-right:1px solid #2b2d31;
+#app {
+  display:flex;
+  width:100%;
+  height:100%;
 }
-#rooms h3{margin:5px 0}
-.room{
-  padding:8px;
-  border-radius:5px;
+
+/* ===== SIDEBAR ===== */
+#sidebar {
+  width:240px;
+  background:#2b2d31;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+}
+
+.room {
+  padding:10px;
+  border-radius:6px;
+  margin-bottom:4px;
   cursor:pointer;
 }
-.room:hover{background:#2b2d31}
+.room:hover { background:#404249; }
 
-#main{
+/* ===== MAIN ===== */
+#main {
   flex:1;
   display:flex;
   flex-direction:column;
 }
 
-#top{
+/* HEADER */
+#header {
   height:48px;
-  background:#2b2d31;
+  background:#313338;
   display:flex;
   align-items:center;
-  padding:0 10px;
+  justify-content:space-between;
+  padding:0 12px;
+  border-bottom:1px solid #1f2023;
+}
+
+#headerLeft {
+  display:flex;
+  align-items:center;
   gap:10px;
 }
-#back{cursor:pointer}
 
-#chat{
-  flex:1;
-  overflow-y:auto;
-  padding:10px;
-}
-
-.msg{
-  margin-bottom:8px;
-}
-.msg b{color:#5dade2}
-.time{
-  color:#aaa;
-  font-size:11px;
-  margin-left:6px;
-}
-
-#typing{
-  font-size:12px;
-  color:#aaa;
-  padding:0 10px;
-}
-
-#input{
-  display:flex;
-  padding:10px;
-  background:#2b2d31;
-}
-#input input{
-  flex:1;
-  padding:10px;
-  border-radius:5px;
+#header button {
+  background:none;
   border:none;
+  color:#dbdee1;
+  cursor:pointer;
+  font-size:14px;
 }
-#input button{
+#header button:hover { color:#fff; }
+
+/* CHAT */
+#chat {
+  flex:1;
+  padding:16px;
+  overflow-y:auto;
+}
+
+.message {
+  margin-bottom:14px;
+}
+.message b {
+  color:#fff;
+}
+.time {
+  font-size:11px;
+  color:#949ba4;
   margin-left:6px;
 }
 
-/* ===== USERS ===== */
-#users{
-  width:180px;
-  background:#111214;
-  border-left:1px solid #2b2d31;
-  padding:10px;
-  transition:width .2s;
-}
-#users.hidden{
-  width:0;
-  padding:0;
-  overflow:hidden;
-}
-#toggleUsers{
-  cursor:pointer;
-}
-#userList div{
-  padding:6px;
-  border-radius:4px;
-}
-#userList div:hover{
-  background:#2b2d31;
+/* TYPING */
+#typing {
+  height:18px;
+  font-size:12px;
+  color:#949ba4;
+  padding-left:16px;
 }
 
-/* ===== HOME ===== */
-#home{
+/* INPUT */
+#inputBar {
+  padding:12px;
+  background:#383a40;
+  border-top:1px solid #1f2023;
+}
+
+#inputBar input {
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:none;
+  background:#1e1f22;
+  color:#dbdee1;
+}
+
+/* USERS */
+#users {
+  width:220px;
+  background:#2b2d31;
+  padding:12px;
+  transition:.25s;
+}
+#users.hidden { width:0; padding:0; overflow:hidden; }
+
+#toggleUsers {
+  cursor:pointer;
+  font-size:14px;
+}
+
+/* HOME */
+#home {
   position:absolute;
   inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
   background:#1e1f22;
+  display:flex;
 }
-#homeBox{
+
+#homeLeft {
+  width:240px;
   background:#2b2d31;
-  padding:20px;
-  border-radius:10px;
-  width:300px;
-  text-align:center;
+  padding:12px;
 }
-#home input{width:100%;margin-bottom:8px;padding:8px}
+
+#homeCenter {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+#homeCenter input, #homeCenter button {
+  width:300px;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:8px;
+  border:none;
+}
+#homeCenter input {
+  background:#2b2d31;
+  color:#fff;
+}
+#homeCenter button {
+  background:#5865f2;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
+<div id="app">
 
-<!-- ROOMS -->
-<div id="rooms">
-  <h3>Huoneet</h3>
-  <div class="room" onclick="join('yleinen')"># yleinen</div>
-  <div class="room" onclick="join('pelit')"># pelit</div>
+<!-- HOME -->
+<div id="home">
+  <div id="homeLeft"><div id="roomList"></div></div>
+  <div id="homeCenter">
+    <input id="nick" placeholder="Username">
+    <button id="createRoom">Create / Join Room</button>
+  </div>
 </div>
+
+<!-- SIDEBAR -->
+<div id="sidebar"></div>
 
 <!-- MAIN -->
 <div id="main">
-  <div id="top">
-    <span id="back">⬅</span>
-    <b id="roomName"></b>
-    <span style="margin-left:auto" id="toggleUsers">👥</span>
+  <div id="header">
+    <div id="headerLeft">
+      <button id="back">← Return</button>
+      <span id="roomName">Select room</span>
+    </div>
+    <span id="toggleUsers">👥</span>
   </div>
 
   <div id="chat"></div>
   <div id="typing"></div>
 
-  <div id="input">
-    <input id="msg" placeholder="Viesti...">
-    <button onclick="send()">➤</button>
+  <div id="inputBar">
+    <input id="msg" placeholder="Message...">
   </div>
 </div>
 
 <!-- USERS -->
-<div id="users">
+<div id="users" class="hidden">
   <b>Online</b>
   <div id="userList"></div>
 </div>
 
-<!-- HOME -->
-<div id="home">
-  <div id="homeBox">
-    <h3>Liity chattiin</h3>
-    <input id="nick" placeholder="Nimi">
-    <input id="roomInput" placeholder="Huone">
-    <button onclick="join()">Liity</button>
-  </div>
 </div>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, onSnapshot,
-  serverTimestamp, doc, setDoc, deleteDoc
+  getFirestore, doc, getDoc, setDoc, collection,
+  addDoc, getDocs, query, orderBy, onSnapshot,
+  serverTimestamp, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "XXX",
-  authDomain: "XXX",
-  projectId: "XXX",
-};
-const app = initializeApp(firebaseConfig);
+const app = initializeApp({
+  apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+  projectId:"chat-fc8ef"
+});
 const db = getFirestore(app);
 
-let room="", nick="", unsub=null, onlineUnsub=null;
+let room="", nick="", unsub;
+
 const chat=document.getElementById("chat");
-const users=document.getElementById("users");
-const userList=document.getElementById("userList");
+const typingEl=document.getElementById("typing");
 
-/* ===== JOIN ===== */
-window.join = async (r) => {
-  nick ||= nickInput.value;
-  room ||= r || roomInput.value;
-  if(!nick || !room) return;
-
-  home.style.display="none";
-  roomName.textContent="# "+room;
-  chat.innerHTML="";
-
-  // messages
-  unsub = onSnapshot(
-    collection(db,"rooms",room,"messages"),
-    s=>{
-      chat.innerHTML="";
-      s.forEach(d=>{
-        const m=d.data();
-        const t=m.time?.toDate?.().toLocaleTimeString()||"";
-        chat.innerHTML+=
-          `<div class="msg"><b>${m.user}</b>
-           <span class="time">${t}</span><br>${m.text}</div>`;
-      });
-      chat.scrollTop=chat.scrollHeight;
-    }
-  );
-
-  // online
-  await setDoc(doc(db,"rooms",room,"online",nick),{at:serverTimestamp()});
-  onlineUnsub = onSnapshot(
-    collection(db,"rooms",room,"online"),
-    s=>{
-      userList.innerHTML="";
-      s.forEach(d=>{
-        userList.innerHTML+=`<div>🟢 ${d.id}</div>`;
-      });
-    }
-  );
-};
-
-/* ===== SEND ===== */
-window.send = async () => {
-  if(!msg.value) return;
-  await addDoc(collection(db,"rooms",room,"messages"),{
-    user:nick,
-    text:msg.value,
-    time:serverTimestamp()
+/* ROOMS */
+async function loadRooms(){
+  roomList.innerHTML="";
+  const s=await getDocs(collection(db,"rooms"));
+  s.forEach(r=>{
+    const d=document.createElement("div");
+    d.className="room";
+    d.textContent="# "+r.id;
+    d.onclick=()=>join(r.id);
+    roomList.appendChild(d);
   });
-  msg.value="";
-};
+}
+loadRooms();
 
-/* ===== BACK ===== */
-back.onclick = async () => {
-  unsub?.(); onlineUnsub?.();
-  await deleteDoc(doc(db,"rooms",room,"online",nick));
-  room=""; home.style.display="flex";
-};
+/* JOIN */
+async function join(r){
+  const pass=prompt("Password");
+  if(pass===null) return;
+  nick=document.getElementById("nick").value||"Anon";
+  localStorage.setItem("nick",nick);
 
-/* ===== TOGGLE USERS ===== */
-toggleUsers.onclick=()=>users.classList.toggle("hidden");
+  const ref=doc(db,"rooms",r);
+  const snap=await getDoc(ref);
+  if(!snap.exists()) await setDoc(ref,{password:pass});
+  else if(snap.data().password!==pass) return alert("Wrong");
 
-/* ===== UNLOAD ===== */
-window.addEventListener("beforeunload",()=>{
-  if(room&&nick)
-    deleteDoc(doc(db,"rooms",room,"online",nick));
+  document.getElementById("home").style.display="none";
+  room=r;
+  roomName.textContent="# "+r;
+
+  const q=query(collection(db,"rooms",r,"messages"),orderBy("time"));
+  unsub=onSnapshot(q,s=>{
+    chat.innerHTML="";
+    s.forEach(d=>{
+      const m=d.data();
+      const t=m.time?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      chat.innerHTML+=`<div class="message"><b>${m.name}</b><span class="time">${t}</span><div>${m.text}</div></div>`;
+    });
+    chat.scrollTop=chat.scrollHeight;
+  });
+}
+
+/* SEND */
+msg.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    addDoc(collection(db,"rooms",room,"messages"),{
+      name:nick,text:msg.value,time:serverTimestamp()
+    });
+    msg.value="";
+  } else {
+    typingEl.textContent=nick+" is typing...";
+    setTimeout(()=>typingEl.textContent="",1200);
+  }
 });
+
+/* BACK */
+back.onclick=()=>{
+  if(unsub) unsub();
+  home.style.display="flex";
+};
+
+/* TOGGLE USERS */
+toggleUsers.onclick=()=>{
+  users.classList.toggle("hidden");
+};
+
+/* CREATE */
+createRoom.onclick=()=>{
+  const r=prompt("Room name");
+  if(r) join(r);
+};
 </script>
 </body>
 </html>
