@@ -2,24 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini Chat</title>
+<title>Mini Chat SPA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-body { margin:0; font-family:'Inter',sans-serif; background:#18191a; color:#eee; display:flex; height:100vh; }
-#roomsPanel, #chatPanel { padding:10px; }
-#roomsPanel { width:220px; background:#242526; display:flex; flex-direction:column; }
-#roomsPanel h2{margin:0 0 10px 0;color:#4b9ce2;font-size:1.1rem;}
-.room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:.2s; }
-.room:hover{background:#4b9ce2;color:#000;}
-#chatPanel { flex:1; display:flex; flex-direction:column; display:none; }
-#chatHeader{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
-#chat{flex:1; overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column;}
-.message{margin-bottom:8px; word-wrap:break-word;}
-.message b{color:#4b9ce2;}
-input, button{padding:8px;margin-top:5px;border-radius:5px;border:none;width:100%; background:#2a2b2d; color:#eee;}
-button{background:#4b9ce2; font-weight:600; cursor:pointer; transition:.2s;}
-button:hover{background:#3a8ad1;}
-#msg{margin-top:10px;}
+  body {
+    margin:0;
+    font-family: 'Inter', sans-serif;
+    background:#18191a;
+    color:#eee;
+    display:flex;
+    height:100vh;
+    overflow:hidden;
+  }
+  /* Left panel - rooms */
+  #roomsPanel {
+    width:220px;
+    background:#242526;
+    display:flex;
+    flex-direction:column;
+    padding:10px;
+    overflow-y:auto;
+  }
+  #roomsPanel h2 { margin:0 0 10px 0; font-size:1.1rem; color:#4b9ce2; }
+  .room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
+  .room:hover { background:#4b9ce2; color:#000; }
+  
+  /* Right panel - chat & login */
+  #mainPanel {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:10px;
+  }
+  h1#title { margin:0 0 10px 0; font-size:1.5rem; }
+  
+  #loginView, #chatView {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+  .hidden { display:none; }
+  
+  #loginView input, #loginView button, #chatView input, #chatView button {
+    padding:8px; margin-top:5px; border-radius:5px; border:none; width:100%; background:#2a2b2d; color:#eee; font-size:1rem;
+  }
+  #loginView button, #chatView button { background:#4b9ce2; color:#fff; cursor:pointer; font-weight:600; }
+  #loginView button:hover, #chatView button:hover { background:#3a8ad1; }
+
+  #chat { flex:1; overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column; }
+  .message { margin-bottom:8px; word-wrap:break-word; }
+  .message b { color:#4b9ce2; }
+
+  #chatControls { display:flex; flex-direction:column; }
+  #chatControls input { margin-bottom:5px; }
+  #backBtn { background:#e04b4b; margin-top:5px; }
+  #backBtn:hover { background:#c33a3a; }
 </style>
 </head>
 <body>
@@ -27,70 +64,76 @@ button:hover{background:#3a8ad1;}
 <div id="roomsPanel">
   <h2>Rooms</h2>
   <div id="roomList"></div>
-  <input id="nick" placeholder="Your nickname">
-  <input id="pass" type="password" placeholder="Room password">
-  <button id="joinBtn">Join Room</button>
 </div>
 
-<div id="chatPanel">
-  <div id="chatHeader">
-    <h1 id="chatTitle">Room</h1>
-    <button id="backBtn">Return</button>
+<div id="mainPanel">
+  <h1 id="title">🔥 Mini Chat</h1>
+
+  <!-- LOGIN VIEW -->
+  <div id="loginView">
+    <input id="nick" placeholder="Choose your nickname">
+    <input id="pass" type="password" placeholder="Room password">
+    <button id="joinBtn">Join Room</button>
   </div>
-  <div id="chat"></div>
-  <input id="msg" placeholder="Type a message (Enter = send)">
+
+  <!-- CHAT VIEW -->
+  <div id="chatView" class="hidden">
+    <div id="chat"></div>
+    <div id="chatControls">
+      <input id="msg" placeholder="Type a message (Enter = send)">
+      <button id="backBtn">Return to Rooms</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc,
-  collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp } 
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getFirestore, doc, getDoc, setDoc, deleteDoc,
+  collection, addDoc, getDocs, query, orderBy,
+  onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase config
 const firebaseConfig = {
-  apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
-  authDomain:"chat-fc8ef.firebaseapp.com",
-  projectId:"chat-fc8ef",
-  storageBucket:"chat-fc8ef.appspot.com",
-  messagingSenderId:"446356718094",
-  appId:"1:446356718094:web:f56514352845d6bbb7b25f"
+  apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+  authDomain: "chat-fc8ef.firebaseapp.com",
+  projectId: "chat-fc8ef",
+  storageBucket: "chat-fc8ef.appspot.com",
+  messagingSenderId: "446356718094",
+  appId: "1:446356718094:web:f56514352845d6bbb7b25f"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let currentRoom = "";
-let unsub=null;
-let nick = localStorage.getItem("nick")||"";
-
+let unsub = null;
 const chat = document.getElementById("chat");
 const roomList = document.getElementById("roomList");
+const msgInput = document.getElementById("msg");
 const nickInput = document.getElementById("nick");
 const passInput = document.getElementById("pass");
-const chatPanel = document.getElementById("chatPanel");
-const roomsPanel = document.getElementById("roomsPanel");
-const chatTitle = document.getElementById("chatTitle");
-const msgInput = document.getElementById("msg");
 
-// Load nickname
+// Persistent nickname
+let nick = localStorage.getItem("nick") || "";
 if(nick) nickInput.value = nick;
 
-// ENTER send
-msgInput.addEventListener("keydown", e=>{if(e.key==="Enter") send();});
-nickInput.addEventListener("keydown", e=>{if(e.key==="Enter") joinRoom();});
-passInput.addEventListener("keydown", e=>{if(e.key==="Enter") joinRoom();});
+// ENTER = send
+msgInput.addEventListener("keydown", e => { if(e.key==="Enter") send(); });
+nickInput.addEventListener("keydown", e => { if(e.key==="Enter") joinRoom(); });
+passInput.addEventListener("keydown", e => { if(e.key==="Enter") joinRoom(); });
 
-// Load rooms
+// Load rooms list
 async function loadRooms(){
   roomList.innerHTML="";
   const roomsSnap = await getDocs(collection(db,"rooms"));
   roomsSnap.forEach(r=>{
-    const div = document.createElement("div");
+    const div=document.createElement("div");
     div.className="room";
-    div.innerText = r.id;
-    div.onclick=()=>{
-      currentRoom = r.id;
+    div.innerText=r.id;
+    div.onclick=()=>{ 
+      currentRoom=r.id;
+      document.getElementById("loginView").classList.remove("hidden");
+      passInput.value=""; 
       passInput.focus();
     };
     roomList.appendChild(div);
@@ -98,35 +141,35 @@ async function loadRooms(){
 }
 loadRooms();
 
-// Join/create room
+// Join Room
 async function joinRoom(){
-  let room = currentRoom;
+  if(!currentRoom) return alert("Select a room from left panel");
   const pass = passInput.value.trim();
   nick = nickInput.value.trim() || "Anon";
-  if(!nick){alert("Enter a nickname"); return;}
-  if(!room){alert("Select a room"); return;}
-  if(!pass){alert("Enter password"); return;}
+
+  if(!pass) return alert("Enter room password");
   localStorage.setItem("nick", nick);
 
-  const roomRef = doc(db,"rooms",room);
+  const roomRef = doc(db,"rooms",currentRoom);
   const snap = await getDoc(roomRef);
   const now=Date.now();
-  const day=24*60*60*1000;
+  const day = 24*60*60*1000;
 
   if(!snap.exists()){
-    await setDoc(roomRef,{password:pass, roomExpiresAt:new Date(now+day)});
+    await setDoc(roomRef,{password:pass,roomExpiresAt:new Date(now+day)});
   } else {
-    if(snap.data().password!==pass){alert("Wrong password"); return;}
+    if(snap.data().password!==pass) return alert("Wrong password");
     await setDoc(roomRef,{roomExpiresAt:new Date(now+day)},{merge:true});
   }
 
-  // Switch view
-  roomsPanel.style.display="none";
-  chatPanel.style.display="flex";
-  chatTitle.innerText = `🔥 ${room}`;
+  // SPA transition
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("chatView").classList.remove("hidden");
+  document.getElementById("title").innerText=`🔥 Room: ${currentRoom}`;
 
-  const q = query(collection(db,"rooms",room,"messages"),orderBy("time"));
-  unsub = onSnapshot(q,snap=>{
+  // Load chat realtime
+  const q = query(collection(db,"rooms",currentRoom,"messages"),orderBy("time"));
+  unsub = onSnapshot(q, snap=>{
     chat.innerHTML="";
     snap.forEach(d=>{
       const m = d.data();
@@ -136,24 +179,24 @@ async function joinRoom(){
   });
 }
 
-// Send messages
+// Send message
 async function send(){
   const text = msgInput.value.trim();
   if(!text) return;
 
   if(text==="/clear"){
-    if(!confirm("Clear all messages in this room?")) return;
-    const msgs = await getDocs(collection(db,"rooms",currentRoom,"messages"));
+    if(!confirm("Clear all messages?")) return;
+    const msgs=await getDocs(collection(db,"rooms",currentRoom,"messages"));
     msgs.forEach(d=>deleteDoc(d.ref));
     msgInput.value=""; return;
   }
+
   if(text==="/delete"){
     if(!confirm("DELETE ENTIRE ROOM?")) return;
-    const msgs = await getDocs(collection(db,"rooms",currentRoom,"messages"));
+    const msgs=await getDocs(collection(db,"rooms",currentRoom,"messages"));
     msgs.forEach(d=>deleteDoc(d.ref));
     await deleteDoc(doc(db,"rooms",currentRoom));
-    returnToRoomList();
-    return;
+    location.reload(); return;
   }
 
   await addDoc(collection(db,"rooms",currentRoom,"messages"),{
@@ -166,19 +209,16 @@ async function send(){
   msgInput.value="";
 }
 
-// Return to rooms
-function returnToRoomList(){
+// Back to rooms
+document.getElementById("backBtn").addEventListener("click",()=>{
   if(unsub) unsub();
-  currentRoom="";
-  chat.innerHTML="";
-  chatPanel.style.display="none";
-  roomsPanel.style.display="flex";
-  passInput.value="";
-  loadRooms();
-}
+  unsub=null;
+  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("loginView").classList.remove("hidden");
+  document.getElementById("title").innerText="🔥 Mini Chat";
+});
 
-document.getElementById("joinBtn").addEventListener("click",joinRoom);
-document.getElementById("backBtn").addEventListener("click",returnToRoomList);
+document.getElementById("joinBtn").addEventListener("click", joinRoom);
 
 </script>
 </body>
