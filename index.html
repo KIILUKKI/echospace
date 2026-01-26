@@ -16,25 +16,23 @@ body {
   align-items: center;
 }
 
-/* CONTAINER: Määrittää chatin leveyden ja pystysuuntaisen sijainnin */
 #container { 
   display: flex; 
   flex-direction: column; 
   width: 90%; 
-  max-width: 600px; /* Enemmän tilaa sivuille (kavennettu) */
-  height: 85vh;     /* Lähes koko näytön korkuinen, jättää tilaa ylös/alas */
+  max-width: 600px; /* Sivuille jää reilusti tilaa */
+  height: 90vh;     /* Lähes koko näytön korkeus */
 }
 
 h1 { margin: 0 0 15px 0; font-size: 1.8rem; text-align: center; flex-shrink: 0; }
 .hidden { display: none !important; }
 
 input, button { padding: 12px; margin-top: 10px; border-radius: 6px; border: none; width: 100%; font-size: 1rem; box-sizing: border-box; }
-input { background: #242526; color: #eee; }
+input { background: #242526; color: #eee; border: 1px solid #3a3b3c; }
 button { background: #4b9ce2; color: #fff; cursor: pointer; font-weight: 600; transition: 0.2s; }
 button:hover { background: #3a8ad1; }
 
-/* ETUSIVUN LISTAUS */
-#homeView { display: flex; flex-direction: column; height: 100%; }
+#homeView { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 #roomList { 
   flex: 1; 
   overflow-y: auto; 
@@ -43,16 +41,15 @@ button:hover { background: #3a8ad1; }
   border-radius: 8px; 
 }
 
-/* CHAT-NÄKYMÄN KIINTEÄ KOKO */
 #chatView { height: 100%; display: flex; flex-direction: column; }
 #chatContainer { 
   display: flex; 
   flex-direction: column; 
-  height: 100%; /* Täyttää containerin */
+  height: 100%; 
 }
 
 #chat { 
-  flex: 1; /* Ottaa kaiken vapaan tilan kontrollien välissä */
+  flex: 1; 
   overflow-y: auto; 
   background: #242526; 
   padding: 15px; 
@@ -64,14 +61,11 @@ button:hover { background: #3a8ad1; }
 .message { margin-bottom: 8px; word-wrap: break-word; line-height: 1.4; }
 .message b { color: #4b9ce2; }
 
-#chatControls { 
-  flex-shrink: 0; /* Pitää napit ja kentän alhaalla vakio-osassa */
-  margin-top: 10px; 
-}
-
-#backBtn { background: #e04b4b; margin-top: 5px; }
+#chatControls { flex-shrink: 0; margin-top: 5px; }
+#backBtn { background: #e04b4b; }
 #backBtn:hover { background: #c33a3a; }
-.room { padding: 12px; margin-bottom: 8px; border-radius: 5px; background: #3a3b3c; cursor: pointer; transition: 0.2s; }
+
+.room { padding: 12px; margin-bottom: 8px; border-radius: 5px; background: #3a3b3c; cursor: pointer; }
 .room:hover { background: #4b9ce2; color: #000; }
 </style>
 </head>
@@ -80,7 +74,6 @@ button:hover { background: #3a8ad1; }
 <div id="container">
   <h1 id="title">🔥 Mini Chat</h1>
 
-  <!-- HOME / ROOM SELECTION -->
   <div id="homeView">
     <input id="nick" placeholder="Valitse nimimerkki">
     <h3>Avoimet huoneet</h3>
@@ -88,7 +81,6 @@ button:hover { background: #3a8ad1; }
     <button id="createRoomBtn">Luo uusi huone</button>
   </div>
 
-  <!-- ROOM CHAT -->
   <div id="chatView" class="hidden">
     <div id="chatContainer">
       <div id="chat"></div>
@@ -116,6 +108,7 @@ const firebaseConfig = {
   messagingSenderId: "446356718094",
   appId: "1:446356718094:web:f56514352845d6bbb7b25f"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -133,18 +126,20 @@ msgInput.addEventListener("keydown", e=>{ if(e.key==="Enter") send(); });
 
 async function loadRooms(){
   roomList.innerHTML="";
-  const roomsSnap = await getDocs(collection(db,"rooms"));
-  roomsSnap.forEach(r=>{
-    const div=document.createElement("div");
-    div.className="room";
-    div.innerText=r.id;
-    div.onclick=async ()=>{
-      const pass = prompt(`Syötä salasana huoneeseen "${r.id}"`);
-      if(pass===null) return;
-      joinRoom(r.id,pass);
-    };
-    roomList.appendChild(div);
-  });
+  try {
+    const roomsSnap = await getDocs(collection(db,"rooms"));
+    roomsSnap.forEach(r=>{
+      const div=document.createElement("div");
+      div.className="room";
+      div.innerText=r.id;
+      div.onclick=async ()=>{
+        const pass = prompt(`Syötä salasana huoneeseen "${r.id}"`);
+        if(pass===null) return;
+        joinRoom(r.id,pass);
+      };
+      roomList.appendChild(div);
+    });
+  } catch(e) { console.error("Error loading rooms:", e); }
 }
 loadRooms();
 
@@ -175,7 +170,7 @@ async function joinRoom(roomName,password){
 
   document.getElementById("homeView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
-  document.getElementById("title").innerText=`Room: ${roomName}`;
+  document.getElementById("title").innerText=`Huone: ${roomName}`;
 
   const q = query(collection(db,"rooms",roomName,"messages"),orderBy("time"));
   unsub = onSnapshot(q,snap=>{
@@ -194,12 +189,14 @@ async function joinRoom(roomName,password){
 async function send(){
   const text=msgInput.value.trim();
   if(!text) return;
+  
   if(text==="/clear"){
     if(!confirm("Tyhjennetäänkö viestit?")) return;
     const msgs=await getDocs(collection(db,"rooms",currentRoom,"messages"));
     msgs.forEach(d=>deleteDoc(d.ref));
     msgInput.value=""; return;
   }
+  
   if(text==="/delete"){
     if(!confirm("POISTETAANKO KOKO HUONE?")) return;
     const msgs=await getDocs(collection(db,"rooms",currentRoom,"messages"));
