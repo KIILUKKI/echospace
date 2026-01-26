@@ -3,21 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <title>Mini Chat</title>
+<style>
+body { background:#111; color:#eee; font-family:sans-serif }
+#chat { height:300px; overflow:auto; border:1px solid #444; padding:5px }
+input, button { width:100%; margin-top:5px; padding:6px }
+.hidden { display:none }
+</style>
 </head>
 <body>
 
-<h2>🔥 Mini Chat</h2>
-<div id="chat" style="height:300px;overflow:auto;border:1px solid #555"></div>
+<h2 id="title">🔥 Mini Chat</h2>
 
-<input id="name" placeholder="Nimi">
-<input id="msg" placeholder="Viesti">
-<button onclick="send()">Lähetä</button>
+<div id="login">
+  <input id="room" placeholder="Huoneen nimi">
+  <input id="pass" type="password" placeholder="Salasana">
+  <button onclick="join()">Liity / Luo huone</button>
+</div>
+
+<div id="chatUI" class="hidden">
+  <div id="chat"></div>
+  <input id="name" placeholder="Nimi">
+  <input id="msg" placeholder="Viesti (Enter = lähetä)">
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, collection, addDoc,
-  query, orderBy, onSnapshot, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, deleteDoc,
+  collection, addDoc, getDocs, query, orderBy,
+  onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -32,29 +46,106 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const chat = document.getElementById("chat");
+let currentRoom = "";
+let unsub = null;
 
-const q = query(collection(db, "messages"), orderBy("time"));
-onSnapshot(q, snap => {
-  chat.innerHTML = "";
-  snap.forEach(d => {
-    const m = d.data();
-    chat.innerHTML += `<div><b>${m.name}:</b> ${m.text}</div>`;
-  });
+const chat = document.getElementById("chat");
+const msgInput = document.getElementById("msg");
+
+// ENTER = lähetä
+msgInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") send();
 });
+
+window.join = async () => {
+  const room = document.getElementById("room").value.trim();
+  const pass = document.getElementById("pass").value;
+
+  if (!room || !pass) {
+    alert("Anna huone ja salasana");
+    return;
+  }
+
+  const roomRef = doc(db, "rooms", room);
+  const snap = await getDoc(roomRef);
+
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+
+  if (!snap.exists()) {
+    // 🔥 LUO HUONE
+    await setDoc(roomRef, {
+      password: pass,
+      roomExpiresAt: new Date(now + day)
+    });
+  } else {
+    if (snap.data().password !== pass) {
+      alert("Väärä salasana");
+      return;
+    }
+    // 🔄 Päivitä huoneen elinikää kun joku liittyy
+    await setDoc(roomRef, {
+      roomExpiresAt: new Date(now + day)
+    }, { merge: true });
+  }
+
+  currentRoom = room;
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("chatUI").classList.remove("hidden");
+  document.getElementById("title").innerText = "🔥 Huone: " + room;
+
+  const q = query(
+    collection(db, "rooms", room, "messages"),
+    orderBy("time")
+  );
+
+  unsub = onSnapshot(q, snap => {
+    chat.innerHTML = "";
+    snap.forEach(d => {
+      const m = d.data();
+      chat.innerHTML += `<div><b>${m.name}:</b> ${m.text}</div>`;
+    });
+    chat.scrollTop = chat.scrollHeight;
+  });
+};
 
 window.send = async () => {
   const name = document.getElementById("name").value || "Anon";
-  const text = document.getElementById("msg").value;
+  const text = msgInput.value.trim();
   if (!text) return;
 
-  await addDoc(collection(db, "messages"), {
-    name,
-    text,
-    time: serverTimestamp()
-  });
+  // 🔧 KOMENNOT
+  if (text === "/clear") {
+    if (!confirm("Tyhjennetäänkö huone?")) return;
+    const msgs = await getDocs(collection(db, "rooms", currentRoom, "messages"));
+    msgs.forEach(d => deleteDoc(d.ref));
+    msgInput.value = "";
+    return;
+  }
 
-  document.getElementById("msg").value = "";
+  if (text === "/delete") {
+    if (!confirm("POISTETAAN KOKO HUONE?")) return;
+
+    const msgs = await getDocs(collection(db, "rooms", currentRoom, "messages"));
+    msgs.forEach(d => deleteDoc(d.ref));
+
+    await deleteDoc(doc(db, "rooms", currentRoom));
+    location.reload();
+    return;
+  }
+
+  // 💬 NORMAALI VIESTI
+  await addDoc(
+    collection(db, "rooms", currentRoom, "messages"),
+    {
+      name,
+      text,
+      time: serverTimestamp(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    }
+  );
+
+  msgInput.value = "";
 };
 </script>
 
