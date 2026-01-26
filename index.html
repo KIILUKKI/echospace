@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Mini Chat SPA</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com" rel="stylesheet">
 <style>
 body {
   margin:0;
@@ -16,7 +16,7 @@ body {
   align-items:center;
 }
 #container { display:flex; flex-direction:column; width:90%; max-width:900px; height:90%; }
-h1 { margin:0 0 15px 0; font-size:1.8rem; text-align:center; }
+h1 { margin:0 0 15px 0; font-size:1.8rem; text-align:center; flex-shrink: 0; }
 .hidden { display:none; }
 
 input, button { padding:10px; margin-top:10px; border-radius:6px; border:none; width:100%; font-size:1rem; }
@@ -24,17 +24,29 @@ input { background:#242526; color:#eee; }
 button { background:#4b9ce2; color:#fff; cursor:pointer; font-weight:600; transition:0.2s; }
 button:hover { background:#3a8ad1; }
 
-/* CHAT PAGE */
-#chatContainer { display:flex; flex-direction:column; flex:1; height:100%; }
-#chat { flex:1; overflow-y:auto; background:#242526; padding:10px; border-radius:8px; display:flex; flex-direction:column; }
+/* CHAT PAGE - FIXED SIZE FIXES */
+#chatContainer { display:flex; flex-direction:column; flex:1; min-height: 0; }
+#chat { 
+  flex:1; 
+  overflow-y:auto; 
+  background:#242526; 
+  padding:10px; 
+  border-radius:8px; 
+  display:flex; 
+  flex-direction:column; 
+  min-height: 0; /* Estää chatin venymisen viestien mukana */
+}
 .message { margin-bottom:8px; word-wrap:break-word; }
 .message b { color:#4b9ce2; }
-#chatControls { display:flex; flex-direction:column; margin-top:5px; }
+#chatControls { display:flex; flex-direction:column; margin-top:5px; flex-shrink: 0; }
 #chatControls input { margin-bottom:5px; }
 #backBtn { background:#e04b4b; }
 #backBtn:hover { background:#c33a3a; }
 .room { padding:8px; margin-bottom:5px; border-radius:5px; background:#2a2b2d; cursor:pointer; transition:0.2s; }
 .room:hover { background:#4b9ce2; color:#000; }
+
+#homeView { flex:1; display:flex; flex-direction:column; min-height: 0; }
+#roomList { flex:1; overflow-y:auto; }
 </style>
 </head>
 <body>
@@ -62,12 +74,12 @@ button:hover { background:#3a8ad1; }
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com";
 import {
   getFirestore, doc, getDoc, setDoc, deleteDoc,
   collection, addDoc, getDocs, query, orderBy,
   onSnapshot, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "https://www.gstatic.com";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
@@ -141,6 +153,9 @@ async function joinRoom(roomName,password){
 
   document.getElementById("homeView").classList.add("hidden");
   document.getElementById("chatView").classList.remove("hidden");
+  document.getElementById("chatView").style.display = "flex";
+  document.getElementById("chatView").style.flex = "1";
+  document.getElementById("chatView").style.minHeight = "0";
   document.getElementById("title").innerText=`🔥 Room: ${roomName}`;
 
   // Load chat realtime
@@ -187,6 +202,7 @@ document.getElementById("backBtn").addEventListener("click",()=>{
   if(unsub) unsub();
   unsub=null;
   document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("chatView").style.display = "none";
   document.getElementById("homeView").classList.remove("hidden");
   document.getElementById("title").innerText="🔥 Mini Chat";
   loadRooms();
