@@ -2,194 +2,205 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MiniChat – Discord Style</title>
+<title>MiniChat - Discord Style</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
-* { box-sizing:border-box; }
+* { box-sizing: border-box; }
 
 body {
-  margin:0;
-  height:100vh;
-  font-family:Inter, sans-serif;
-  background:#1e1f22;
-  color:#dbdee1;
-  display:flex;
+  margin: 0;
+  height: 100vh;
+  font-family: Inter, sans-serif;
+  background: #1e1f22;
+  color: #dbdee1;
+  display: flex;
 }
 
-/* ===== LAYOUT ===== */
 #app {
-  display:flex;
-  width:100%;
-  height:100%;
+  display: flex;
+  width: 100%;
+  height: 100%;
 }
 
-/* ===== SIDEBAR ===== */
+/* SIDEBAR */
 #sidebar {
-  width:240px;
-  background:#2b2d31;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
+  width: 240px;
+  background: #2b2d31;
+  padding: 12px;
 }
 
 .room {
-  padding:10px;
-  border-radius:6px;
-  margin-bottom:4px;
-  cursor:pointer;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
 }
-.room:hover { background:#404249; }
+.room:hover {
+  background: #404249;
+}
 
-/* ===== MAIN ===== */
+/* MAIN */
 #main {
-  flex:1;
-  display:flex;
-  flex-direction:column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* HEADER */
 #header {
-  height:48px;
-  background:#313338;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 12px;
-  border-bottom:1px solid #1f2023;
+  height: 48px;
+  background: #313338;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid #1f2023;
 }
 
 #headerLeft {
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 #header button {
-  background:none;
-  border:none;
-  color:#dbdee1;
-  cursor:pointer;
-  font-size:14px;
+  background: none;
+  border: none;
+  color: #dbdee1;
+  cursor: pointer;
 }
-#header button:hover { color:#fff; }
 
-/* CHAT */
 #chat {
-  flex:1;
-  padding:16px;
-  overflow-y:auto;
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .message {
-  margin-bottom:14px;
+  margin-bottom: 14px;
 }
+
 .message b {
-  color:#fff;
+  color: #ffffff;
 }
+
 .time {
-  font-size:11px;
-  color:#949ba4;
-  margin-left:6px;
+  font-size: 11px;
+  color: #949ba4;
+  margin-left: 6px;
 }
 
 /* TYPING */
 #typing {
-  height:18px;
-  font-size:12px;
-  color:#949ba4;
-  padding-left:16px;
+  height: 18px;
+  font-size: 12px;
+  color: #949ba4;
+  padding-left: 16px;
 }
 
 /* INPUT */
 #inputBar {
-  padding:12px;
-  background:#383a40;
-  border-top:1px solid #1f2023;
-  display:flex;
-  gap:8px;
+  padding: 12px;
+  background: #383a40;
+  border-top: 1px solid #1f2023;
+  display: flex;
+  gap: 8px;
 }
 
-#inputBar input {
-  flex:1;
-  padding:12px;
-  border-radius:8px;
-  border:none;
-  background:#1e1f22;
-  color:#dbdee1;
+#msg {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: #1e1f22;
+  color: #dbdee1;
 }
 
 #emojiBtn {
-  background:none;
-  border:none;
-  font-size:20px;
-  cursor:pointer;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #dbdee1;
 }
 
-/* EMOJI PANEL */
+/* EMOJI PANEL (ASCII SYMBOLS) */
 #emojiPanel {
-  position:absolute;
-  bottom:70px;
-  left:260px;
-  background:#2b2d31;
-  padding:10px;
-  border-radius:8px;
-  display:none;
-  grid-template-columns:repeat(8,1fr);
-  gap:6px;
+  position: absolute;
+  bottom: 70px;
+  left: 260px;
+  background: #2b2d31;
+  padding: 10px;
+  border-radius: 8px;
+  display: none;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
 }
+
 .emoji {
-  cursor:pointer;
-  font-size:20px;
+  cursor: pointer;
+  padding: 4px;
+  text-align: center;
+  background: #404249;
+  border-radius: 4px;
 }
 
 /* USERS */
 #users {
-  width:220px;
-  background:#2b2d31;
-  padding:12px;
-  transition:.25s;
+  width: 220px;
+  background: #2b2d31;
+  padding: 12px;
+  transition: 0.25s;
 }
-#users.hidden { width:0; padding:0; overflow:hidden; }
+
+#users.hidden {
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
 /* HOME */
 #home {
-  position:absolute;
-  inset:0;
-  background:#1e1f22;
-  display:flex;
+  position: absolute;
+  inset: 0;
+  background: #1e1f22;
+  display: flex;
 }
 
 #homeLeft {
-  width:240px;
-  background:#2b2d31;
-  padding:12px;
+  width: 240px;
+  background: #2b2d31;
+  padding: 12px;
 }
 
 #homeCenter {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-#homeCenter input, #homeCenter button {
-  width:300px;
-  padding:14px;
-  margin-bottom:12px;
-  border-radius:8px;
-  border:none;
-}
-#homeCenter input {
-  background:#2b2d31;
-  color:#fff;
-}
+#homeCenter input,
 #homeCenter button {
-  background:#5865f2;
-  color:#fff;
-  font-weight:600;
-  cursor:pointer;
+  width: 300px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: none;
+}
+
+#homeCenter input {
+  background: #2b2d31;
+  color: #ffffff;
+}
+
+#homeCenter button {
+  background: #5865f2;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -204,7 +215,7 @@ body {
   </div>
   <div id="homeCenter">
     <input id="nick" placeholder="Username">
-    <button id="createRoom">Create / Join Room</button>
+    <button id="createRoom">Create or Join Room</button>
   </div>
 </div>
 
@@ -215,17 +226,17 @@ body {
 <div id="main">
   <div id="header">
     <div id="headerLeft">
-      <button id="back">← Return</button>
+      <button id="back">Back</button>
       <span id="roomName">Select room</span>
     </div>
-    <span id="toggleUsers">👥</span>
+    <button id="toggleUsers">Users</button>
   </div>
 
   <div id="chat"></div>
   <div id="typing"></div>
 
   <div id="inputBar">
-    <button id="emojiBtn">😊</button>
+    <button id="emojiBtn">Emotes</button>
     <input id="msg" placeholder="Message...">
   </div>
 </div>
@@ -249,121 +260,120 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp({
-  apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
-  projectId:"chat-fc8ef"
+  apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+  projectId: "chat-fc8ef"
 });
+
 const db = getFirestore(app);
 
-let room="", nick="", unsub;
+let room = "";
+let nick = "";
+let unsub = null;
 
-const chat=document.getElementById("chat");
-const typingEl=document.getElementById("typing");
-
-/* ROOMS */
-async function loadRooms(){
-  roomList.innerHTML="";
-  const s=await getDocs(collection(db,"rooms"));
-  s.forEach(r=>{
-    const d=document.createElement("div");
-    d.className="room";
-    d.textContent="# "+r.id;
-    d.onclick=()=>join(r.id);
+/* LOAD ROOMS */
+async function loadRooms() {
+  roomList.innerHTML = "";
+  const snap = await getDocs(collection(db, "rooms"));
+  snap.forEach(r => {
+    const d = document.createElement("div");
+    d.className = "room";
+    d.textContent = "# " + r.id;
+    d.onclick = () => join(r.id);
     roomList.appendChild(d);
   });
 }
 loadRooms();
 
-/* JOIN */
-async function join(r){
-  const pass=prompt("Password");
-  if(pass===null) return;
+/* JOIN ROOM */
+async function join(r) {
+  const pass = prompt("Password");
+  if (pass === null) return;
 
-  nick=document.getElementById("nick").value||"Anon";
-  localStorage.setItem("nick",nick);
+  nick = document.getElementById("nick").value || "Anon";
 
-  const ref=doc(db,"rooms",r);
-  const snap=await getDoc(ref);
-  if(!snap.exists()) await setDoc(ref,{password:pass});
-  else if(snap.data().password!==pass) return alert("Wrong");
+  const ref = doc(db, "rooms", r);
+  const snap = await getDoc(ref);
 
-  document.getElementById("home").style.display="none";
-  room=r;
-  roomName.textContent="# "+r;
+  if (!snap.exists()) {
+    await setDoc(ref, { password: pass });
+  } else if (snap.data().password !== pass) {
+    alert("Wrong password");
+    return;
+  }
 
-  const userRef=doc(db,"rooms",room,"users",nick);
-  await setDoc(userRef,{online:true});
-  window.addEventListener("beforeunload",()=>deleteDoc(userRef));
+  home.style.display = "none";
+  room = r;
+  roomName.textContent = "# " + r;
 
-  onSnapshot(collection(db,"rooms",room,"users"),s=>{
-    userList.innerHTML="";
-    s.forEach(u=>{
-      const d=document.createElement("div");
-      d.textContent="🟢 "+u.id;
+  const userRef = doc(db, "rooms", room, "users", nick);
+  await setDoc(userRef, { online: true });
+  window.addEventListener("beforeunload", () => deleteDoc(userRef));
+
+  onSnapshot(collection(db, "rooms", room, "users"), s => {
+    userList.innerHTML = "";
+    s.forEach(u => {
+      const d = document.createElement("div");
+      d.textContent = "- " + u.id;
       userList.appendChild(d);
     });
   });
 
-  const q=query(collection(db,"rooms",r,"messages"),orderBy("time"));
-  unsub=onSnapshot(q,s=>{
-    chat.innerHTML="";
-    s.forEach(d=>{
-      const m=d.data();
-      const t=m.time?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      chat.innerHTML+=`
-        <div class="message">
-          <b>${m.name}</b>
-          <span class="time">${t||""}</span>
-          <div>${m.text}</div>
-        </div>`;
+  const q = query(collection(db, "rooms", room, "messages"), orderBy("time"));
+  unsub = onSnapshot(q, s => {
+    chat.innerHTML = "";
+    s.forEach(d => {
+      const m = d.data();
+      const t = m.time ? m.time.toDate().toLocaleTimeString() : "";
+      chat.innerHTML +=
+        "<div class='message'><b>" + m.name +
+        "</b><span class='time'>" + t +
+        "</span><div>" + m.text + "</div></div>";
     });
-    chat.scrollTop=chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
   });
 }
 
 /* SEND */
-msg.addEventListener("keydown",e=>{
-  if(e.key==="Enter" && msg.value){
-    addDoc(collection(db,"rooms",room,"messages"),{
-      name:nick,text:msg.value,time:serverTimestamp()
+msg.addEventListener("keydown", e => {
+  if (e.key === "Enter" && msg.value) {
+    addDoc(collection(db, "rooms", room, "messages"), {
+      name: nick,
+      text: msg.value,
+      time: serverTimestamp()
     });
-    msg.value="";
-  } else {
-    typingEl.textContent=nick+" is typing...";
-    setTimeout(()=>typingEl.textContent="",1200);
+    msg.value = "";
   }
 });
 
-/* BACK */
-back.onclick=()=>{
-  if(unsub) unsub();
-  home.style.display="flex";
+/* UI */
+back.onclick = () => {
+  if (unsub) unsub();
+  home.style.display = "flex";
 };
 
-/* TOGGLE USERS */
-toggleUsers.onclick=()=>{
+toggleUsers.onclick = () => {
   users.classList.toggle("hidden");
 };
 
-/* CREATE */
-createRoom.onclick=()=>{
-  const r=prompt("Room name");
-  if(r) join(r);
+createRoom.onclick = () => {
+  const r = prompt("Room name");
+  if (r) join(r);
 };
 
-/* EMOJIS */
-const emojis="😀😃😄😁😆😅😂🤣😊😍😘😎😭😡🔥💀👍👎❤️💔🎉".split("");
-emojiBtn.onclick=()=>{
+/* ASCII EMOTES */
+const emotes = [":)", ":D", ";)", "<3", ":(", ":P", "XD"];
+emojiBtn.onclick = () => {
   emojiPanel.style.display =
-    emojiPanel.style.display==="none" ? "grid" : "none";
+    emojiPanel.style.display === "none" ? "grid" : "none";
 };
-emojis.forEach(e=>{
-  const s=document.createElement("span");
-  s.textContent=e;
-  s.className="emoji";
-  s.onclick=()=>{
-    msg.value+=e;
-    emojiPanel.style.display="none";
-    msg.focus();
+
+emotes.forEach(e => {
+  const s = document.createElement("div");
+  s.className = "emoji";
+  s.textContent = e;
+  s.onclick = () => {
+    msg.value += " " + e;
+    emojiPanel.style.display = "none";
   };
   emojiPanel.appendChild(s);
 });
