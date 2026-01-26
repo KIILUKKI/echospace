@@ -35,6 +35,8 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color
 </head>
 <body>
 <div id="app">
+
+<!-- HOME -->
 <div id="home">
   <div id="homeLeft"><div id="roomList"></div></div>
   <div id="homeCenter">
@@ -43,8 +45,10 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color
   </div>
 </div>
 
+<!-- SIDEBAR -->
 <div id="sidebar"></div>
 
+<!-- MAIN -->
 <div id="main">
   <div id="header">
     <div id="headerLeft">
@@ -53,17 +57,21 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color
     </div>
     <span id="toggleUsers">👥</span>
   </div>
+
   <div id="chat"></div>
   <div id="typing"></div>
+
   <div id="inputBar">
     <input id="msg" placeholder="Message...">
   </div>
 </div>
 
+<!-- USERS -->
 <div id="users" class="hidden">
   <b>Online</b>
   <div id="userList"></div>
 </div>
+
 </div>
 
 <script type="module">
@@ -130,30 +138,30 @@ async function join(r){
     });
   });
 
-  // Typing status per user
+  // Typing-per-user
   const typingRef = collection(db,"rooms",room,"typing");
   onSnapshot(typingRef,s=>{
     const arr=[];
-    s.forEach(doc=>{ if(doc.id!==nick && doc.data().typing) arr.push(doc.id); });
+    s.forEach(doc=>{
+      if(doc.id!==nick && doc.data().typing) arr.push(doc.id);
+    });
     typingEl.textContent=arr.length>0 ? arr.join(", ")+" is typing..." : "";
   });
 
   // Messages
   const q=query(collection(db,"rooms",r,"messages"),orderBy("time"));
   unsub=onSnapshot(q,s=>{
-    s.forEach(d=>{
-      const m=d.data();
-      if(m.name!==nick){
-        typingEl.textContent = "📢 New message!";
-        setTimeout(()=>typingEl.textContent="",500);
-      }
-    });
-
     chat.innerHTML="";
     s.forEach(d=>{
       const m=d.data();
       const t=m.time?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
       chat.innerHTML+=`<div class="message"><b>${m.name}</b><span class="time">${t||""}</span><div>${m.text}</div></div>`;
+
+      // Chrome notification vain jos joku muu kirjoittaa
+      if(m.name!==nick && Notification.permission==="granted"){
+        const n = new Notification(`${m.name} sent a message`, { body:m.text });
+        setTimeout(()=>n.close(),500);
+      }
     });
     chat.scrollTop = chat.scrollHeight;
   });
@@ -176,7 +184,7 @@ back.onclick=()=>{ if(unsub) unsub(); home.style.display="flex"; };
 toggleUsers.onclick=()=>users.classList.toggle("hidden");
 createRoom.onclick=()=>{ const r=prompt("Room name"); if(r) join(r); };
 
-// Notification permission
+// Pyydetään ilmoitusoikeus
 if(Notification.permission!=="granted") Notification.requestPermission();
 </script>
 </body>
