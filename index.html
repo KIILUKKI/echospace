@@ -5,7 +5,6 @@
 <title>🔥 Mini Chat SPA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* Perusasetukset */
 body {
   margin:0;
   font-family:'Inter',sans-serif;
@@ -17,8 +16,8 @@ body {
   align-items:center;
 }
 
+/* CONTAINER */
 #container {
-  display:flex;
   width:90%;
   max-width:1000px;
   height:80vh;
@@ -26,14 +25,17 @@ body {
   border-radius:12px;
   overflow:hidden;
   box-shadow:0 10px 30px rgba(0,0,0,0.5);
-}
-
-/* Vasemmanpuoleinen valikko */
-#homeView, #roomList {
   display:flex;
   flex-direction:column;
 }
 
+/* HOME VIEW */
+#homeView {
+  display:flex;
+  flex:1;
+}
+
+/* Vasen valikko */
 #sidebar {
   width:250px;
   background:#242526;
@@ -46,15 +48,6 @@ body {
   margin:0 0 10px 0;
   font-size:1.2rem;
   text-align:center;
-}
-
-#nick {
-  margin-bottom:15px;
-  padding:10px;
-  border-radius:6px;
-  border:none;
-  background:#3a3b3e;
-  color:#eee;
 }
 
 .room {
@@ -71,20 +64,54 @@ body {
   color:#000;
 }
 
-/* Oikea chat-alue */
-#chatView {
+/* Keskiosa */
+#homeCenter {
   flex:1;
   display:flex;
   flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+#nick {
   padding:15px;
-  background:#18191a;
+  border-radius:6px;
+  border:none;
+  font-size:1.2rem;
+  width:60%;
+  max-width:400px;
+  text-align:center;
+  background:#3a3b3e;
+  color:#eee;
+  margin-bottom:20px;
+}
+
+#createRoomBtn {
+  padding:15px 30px;
+  border:none;
+  border-radius:6px;
+  background:#4b9ce2;
+  color:#fff;
+  font-weight:600;
+  font-size:1rem;
+  cursor:pointer;
+  transition:0.2s;
+}
+#createRoomBtn:hover { background:#3a8ad1; }
+
+/* CHAT VIEW */
+#chatView {
+  display:none;
+  flex-direction:column;
+  height:100%;
+  padding:15px;
 }
 
 #title {
-  margin:0 0 10px 0;
   text-align:center;
   font-size:1.6rem;
   font-weight:600;
+  margin:0 0 15px 0;
 }
 
 #chatContainer {
@@ -133,26 +160,30 @@ body {
 #backBtn { background:#e04b4b; }
 #backBtn:hover { background:#c33a3a; }
 
-/* Mobile-friendly */
 @media(max-width:800px){
-  #container { flex-direction:column; height:90vh; }
+  #homeView { flex-direction:column; }
   #sidebar { width:100%; flex-direction:row; overflow-x:auto; padding:5px; }
   .room { flex:1; margin:0 5px 0 0; }
+  #homeCenter { width:100%; }
 }
 </style>
 </head>
 <body>
 <div id="container">
-  <!-- Vasen sivupalkki -->
-  <div id="sidebar">
-    <h2>Rooms</h2>
-    <input id="nick" placeholder="Nickname">
-    <div id="roomList"></div>
-    <button id="createRoomBtn">+ Create Room</button>
+  <!-- HOME VIEW -->
+  <div id="homeView">
+    <div id="sidebar">
+      <h2>Rooms</h2>
+      <div id="roomList"></div>
+    </div>
+    <div id="homeCenter">
+      <input id="nick" placeholder="Enter your nickname">
+      <button id="createRoomBtn">+ Create Room</button>
+    </div>
   </div>
 
-  <!-- Chat-alue -->
-  <div id="chatView" class="hidden">
+  <!-- CHAT VIEW -->
+  <div id="chatView">
     <h1 id="title">🔥 Mini Chat</h1>
     <div id="chatContainer">
       <div id="chat"></div>
@@ -242,9 +273,10 @@ async function joinRoom(roomName,password){
     await setDoc(roomRef,{roomExpiresAt:new Date(now+day)},{merge:true});
   }
 
-  document.getElementById("chatView").classList.remove("hidden");
+  document.getElementById("homeView").style.display="none";
+  document.getElementById("chatView").style.display="flex";
+  document.getElementById("title").innerText=`🔥 Room: ${roomName}`;
 
-  // Load chat realtime
   const q = query(collection(db,"rooms",roomName,"messages"),orderBy("time"));
   unsub = onSnapshot(q,snap=>{
     chat.innerHTML="";
@@ -287,7 +319,8 @@ async function send(){
 document.getElementById("backBtn").addEventListener("click",()=>{
   if(unsub) unsub();
   unsub=null;
-  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("chatView").style.display="none";
+  document.getElementById("homeView").style.display="flex";
   loadRooms();
 });
 </script>
