@@ -187,7 +187,7 @@
       if (text === "/clear") {
         const q = query(collection(db, "rooms", room, "messages"));
         const s = await getDocs(q);
-        s.forEach(d => deleteDoc(d.ref)); // Remove all messages for all users
+        s.forEach(d => deleteDoc(d.ref)); // Remove all messages
         return;
       }
 
