@@ -1,251 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>MiniChat – Discord Style</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;}
-body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color:#dbdee1;display:flex;}
-#app{display:flex;width:100%;height:100%;}
-#sidebar{width:240px;background:#2b2d31;padding:12px;display:flex;flex-direction:column;}
-.room{padding:10px;border-radius:6px;margin-bottom:4px;cursor:pointer;}
-.room:hover{background:#404249;}
-#main{flex:1;display:flex;flex-direction:column;}
-#header{height:48px;background:#313338;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #1f2023;}
-#headerLeft{display:flex;align-items:center;gap:10px;}
-#header button{background:none;border:none;color:#dbdee1;cursor:pointer;font-size:14px;}
-#header button:hover{color:#fff;}
-#chat{flex:1;padding:16px;overflow-y:auto;}
-.message{margin-bottom:14px;position:relative;}
-.message b{color:#fff;}
-.time{font-size:11px;color:#949ba4;margin-left:6px;}
-#typing{height:18px;font-size:12px;color:#949ba4;padding-left:16px;}
-#inputBar{padding:12px;background:#383a40;border-top:1px solid #1f2023;display:flex;gap:6px;}
-#inputBar input{flex:1;padding:12px;border-radius:8px;border:none;background:#1e1f22;color:#dbdee1;}
-.replyBtn{position:absolute;right:6px;top:6px;font-size:10px;background:none;border:none;color:#949ba4;cursor:pointer;}
-.replyBtn:hover{color:#fff;}
-#users{width:220px;background:#2b2d31;padding:12px;transition:.25s;}
-#users.hidden{width:0;padding:0;overflow:hidden;}
-#home{position:absolute;inset:0;background:#1e1f22;display:flex;}
-#homeLeft{width:240px;background:#2b2d31;padding:12px;}
-#homeCenter{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;}
-#homeCenter input,#homeCenter button{width:300px;padding:14px;margin-bottom:12px;border-radius:8px;border:none;}
-#homeCenter input{background:#2b2d31;color:#fff;}
-#homeCenter button{background:#5865f2;color:#fff;font-weight:600;cursor:pointer;}
-</style>
+  <meta charset="UTF-8">
+  <title>MiniChat – Discord Style</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {box-sizing: border-box;}
+    body {margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #1e1f22; color: #dbdee1; display: flex;}
+    #app {display: flex; width: 100%; height: 100%;}
+    #sidebar, #users {width: 240px; background: #2b2d31; padding: 12px; transition: .25s;}
+    #sidebar {display: flex; flex-direction: column;}
+    #users.hidden {width: 0; padding: 0; overflow: hidden;}
+    #main {flex: 1; display: flex; flex-direction: column;}
+    #header {height: 48px; background: #313338; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid #1f2023;}
+    #headerLeft {display: flex; align-items: center; gap: 10px;}
+    #header button {background: none; border: none; color: #dbdee1; cursor: pointer; font-size: 14px;}
+    #header button:hover {color: #fff;}
+    #chat {flex: 1; padding: 16px; overflow-y: auto;}
+    .message {margin-bottom: 14px; position: relative;}
+    .message b {color: #fff;}
+    .time {font-size: 11px; color: #949ba4; margin-left: 6px;}
+    #inputBar {padding: 12px; background: #383a40; border-top: 1px solid #1f2023; display: flex; gap: 6px;}
+    #inputBar input {flex: 1; padding: 12px; border-radius: 8px; border: none; background: #1e1f22; color: #dbdee1;}
+    #home {position: absolute; inset: 0; background: #1e1f22; display: flex;}
+    #homeLeft {width: 240px; background: #2b2d31; padding: 12px;}
+    #homeCenter {flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+    #homeCenter input, #homeCenter button {width: 300px; padding: 14px; margin-bottom: 12px; border-radius: 8px; border: none;}
+    #homeCenter input {background: #2b2d31; color: #fff;}
+    #homeCenter button {background: #5865f2; color: #fff; font-weight: 600; cursor: pointer;}
+  </style>
 </head>
 <body>
-<div id="app">
-
-<!-- HOME -->
-<div id="home">
-  <div id="homeLeft"><div id="roomList"></div></div>
-  <div id="homeCenter">
-    <input id="nick" placeholder="Username">
-    <button id="createRoom">Create / Join Room</button>
-  </div>
-</div>
-
-<!-- SIDEBAR -->
-<div id="sidebar"></div>
-
-<!-- MAIN -->
-<div id="main">
-  <div id="header">
-    <div id="headerLeft">
-      <button id="back">← Return</button>
-      <span id="roomName">Select room</span>
+  <div id="app">
+    <!-- HOME -->
+    <div id="home">
+      <div id="homeLeft"><div id="roomList"></div></div>
+      <div id="homeCenter">
+        <input id="nick" placeholder="Username">
+        <button id="createRoom">Create / Join Room</button>
+      </div>
     </div>
-    <span id="toggleUsers">👥</span>
-  </div>
 
-  <div id="chat"></div>
-  <div id="typing"></div>
+    <!-- SIDEBAR -->
+    <div id="sidebar"></div>
 
-  <div id="inputBar">
-    <input id="msg" placeholder="Message... (/clear, /delete)">
-  </div>
-</div>
-
-<!-- USERS -->
-<div id="users" class="hidden">
-  <b>Online</b>
-  <div id="userList"></div>
-</div>
-
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, doc, getDoc, setDoc, collection,
-  addDoc, getDocs, query, orderBy,
-  onSnapshot, serverTimestamp, deleteDoc, limit
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-/* FIREBASE */
-const app = initializeApp({
-  apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
-  projectId:"chat-fc8ef"
-});
-const db = getFirestore(app);
-
-/* STATE */
-let room="", nick="", unsub;
-let lastNotifiedTime=null;
-let replyToMsg = null; // tallentaa reply-viestin
-
-/* ELEMENTS */
-const chat = document.getElementById("chat");
-const typingEl = document.getElementById("typing");
-const msg = document.getElementById("msg");
-
-/* PERSIST */
-document.getElementById("nick").value = localStorage.getItem("nick") || "";
-
-/* LOAD ROOMS */
-async function loadRooms(){
-  roomList.innerHTML="";
-  const s = await getDocs(collection(db,"rooms"));
-  s.forEach(r=>{
-    const d=document.createElement("div");
-    d.className="room";
-    d.textContent="# "+r.id;
-    d.onclick=()=>join(r.id);
-    roomList.appendChild(d);
-  });
-}
-loadRooms();
-
-/* JOIN ROOM */
-async function join(r){
-  const pass=prompt("Password");
-  if(pass===null) return;
-  nick=document.getElementById("nick").value || ("Anon"+Math.floor(Math.random()*1000));
-  localStorage.setItem("nick",nick);
-
-  const ref=doc(db,"rooms",r);
-  const snap=await getDoc(ref);
-  if(!snap.exists()) await setDoc(ref,{password:pass});
-  else if(snap.data().password!==pass) return alert("Wrong");
-
-  document.getElementById("home").style.display="none";
-  room=r;
-  roomName.textContent="# "+r;
-
-  const userRef=doc(db,"rooms",room,"users",nick);
-  await setDoc(userRef,{online:true});
-  window.addEventListener("beforeunload",()=>deleteDoc(userRef));
-
-  /* Online-lista */
-  onSnapshot(collection(db,"rooms",room,"users"),s=>{
-    userList.innerHTML="";
-    s.forEach(u=>{
-      const d=document.createElement("div");
-      d.textContent="🟢 "+u.id;
-      userList.appendChild(d);
-    });
-  });
-
-  /* Typing */
-  const typingRef = collection(db,"rooms",room,"typing");
-  onSnapshot(typingRef,s=>{
-    const arr=[];
-    s.forEach(doc=>{
-      if(doc.id!==nick && doc.data().typing) arr.push(doc.id);
-    });
-    typingEl.textContent=arr.length>0 ? arr.join(", ")+" is typing..." : "";
-  });
-
-  /* Messages + reply + notifications */
-  const q=query(collection(db,"rooms",room,"messages"),orderBy("time"));
-  unsub=onSnapshot(q,s=>{
-    chat.innerHTML="";
-    s.forEach(d=>{
-      const m=d.data();
-      const t=m.time?.toDate();
-      let replyHtml = "";
-      if(m.replyTo){
-        replyHtml = `<div style="font-size:11px;color:#888;margin-bottom:2px;">Replying to <b>${m.replyTo.name}</b>: ${m.replyTo.text.substring(0,30)}...</div>`;
-      }
-
-      chat.innerHTML+=`
-        <div class="message">
-          ${replyHtml}
-          <b>${m.name}</b>
-          <span class="time">${t?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})||""}</span>
-          <div>${m.text}</div>
-          <button class="replyBtn" data-id="${d.id}">↩</button>
+    <!-- MAIN -->
+    <div id="main">
+      <div id="header">
+        <div id="headerLeft">
+          <button id="back">← Return</button>
+          <span id="roomName">Select room</span>
         </div>
-      `;
+        <span id="toggleUsers">👥</span>
+      </div>
 
-      if(document.hidden && m.name!==nick && t && (!lastNotifiedTime || t>lastNotifiedTime) && Notification.permission==="granted"){
-        new Notification("New message", { body: `${m.name}: ${m.text}` });
+      <div id="chat"></div>
+      <div id="typing"></div>
+
+      <div id="inputBar">
+        <input id="msg" placeholder="Message... (/clear, /delete)">
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="users" class="hidden">
+      <b>Online</b>
+      <div id="userList"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, collection,
+      addDoc, getDocs, query, orderBy,
+      onSnapshot, serverTimestamp, deleteDoc, limit
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+      projectId: "chat-fc8ef"
+    });
+    const db = getFirestore(app);
+
+    /* STATE */
+    let room = "", nick = "", unsub;
+    let lastNotifiedTime = null;
+
+    /* ELEMENTS */
+    const chat = document.getElementById("chat");
+    const typingEl = document.getElementById("typing");
+    const msg = document.getElementById("msg");
+
+    /* PERSIST */
+    document.getElementById("nick").value = localStorage.getItem("nick") || "";
+
+    /* LOAD ROOMS */
+    async function loadRooms() {
+      roomList.innerHTML = "";
+      const s = await getDocs(collection(db, "rooms"));
+      s.forEach(r => {
+        const d = document.createElement("div");
+        d.className = "room";
+        d.textContent = "# " + r.id;
+        d.onclick = () => join(r.id);
+        roomList.appendChild(d);
+      });
+    }
+    loadRooms();
+
+    /* JOIN ROOM */
+    async function join(r) {
+      const pass = prompt("Password");
+      if (pass === null) return;
+      nick = document.getElementById("nick").value || ("Anon" + Math.floor(Math.random() * 1000));
+      localStorage.setItem("nick", nick);
+
+      const ref = doc(db, "rooms", r);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) await setDoc(ref, { password: pass });
+      else if (snap.data().password !== pass) return alert("Wrong");
+
+      document.getElementById("home").style.display = "none";
+      room = r;
+      roomName.textContent = "# " + r;
+
+      const userRef = doc(db, "rooms", room, "users", nick);
+      await setDoc(userRef, { online: true, lastActivity: serverTimestamp() });
+      window.addEventListener("beforeunload", () => deleteDoc(userRef));
+
+      /* Online-lista */
+      const userRefCollection = collection(db, "rooms", room, "users");
+      const userRefQuery = query(userRefCollection);
+      onSnapshot(userRefQuery, s => {
+        userList.innerHTML = "";
+        const now = new Date().getTime();
+        s.forEach(u => {
+          const user = u.data();
+          const lastActivity = user.lastActivity ? user.lastActivity.seconds * 1000 : now;
+          if (now - lastActivity < 180000) {
+            const d = document.createElement("div");
+            d.textContent = "🟢 " + u.id;
+            userList.appendChild(d);
+          } else {
+            deleteDoc(u.ref);  // Remove inactive users
+          }
+        });
+      });
+
+      /* Messages + notifications */
+      const q = query(collection(db, "rooms", room, "messages"), orderBy("time"));
+      unsub = onSnapshot(q, s => {
+        chat.innerHTML = "";
+        s.forEach(d => {
+          const m = d.data();
+          const t = m.time?.toDate();
+          chat.innerHTML += `
+            <div class="message">
+              <b>${m.name}</b>
+              <span class="time">${t?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || ""}</span>
+              <div>${m.text}</div>
+            </div>
+          `;
+
+          if (document.hidden && m.name !== nick && t && (!lastNotifiedTime || t > lastNotifiedTime) && Notification.permission === "granted") {
+            new Notification("New message");
+          }
+
+          if (t) lastNotifiedTime = t;
+        });
+        chat.scrollTop = chat.scrollHeight;
+      });
+    }
+
+    /* SEND MESSAGE + /commands */
+    msg.addEventListener("keydown", async e => {
+      if (e.key !== "Enter") return;
+      const text = msg.value.trim();
+      msg.value = "";
+      if (!text) return;
+
+      if (text === "/clear") {
+        chat.innerHTML = "";
+        return;
       }
 
-      if(t) lastNotifiedTime = t;
+      if (text === "/delete") {
+        const q = query(
+          collection(db, "rooms", room, "messages"),
+          orderBy("time", "desc"),
+          limit(1)
+        );
+        const s = await getDocs(q);
+        s.forEach(d => {
+          if (d.data().name === nick) deleteDoc(d.ref);
+        });
+        return;
+      }
+
+      await addDoc(collection(db, "rooms", room, "messages"), {
+        name: nick,
+        text,
+        time: serverTimestamp()
+      });
     });
-    chat.scrollTop = chat.scrollHeight;
-  });
 
-  /* Reply button */
-  chat.addEventListener("click", e=>{
-    if(e.target.classList.contains("replyBtn")){
-      const msgId = e.target.dataset.id;
-      const msgData = s.docs.find(doc=>doc.id===msgId).data();
-      replyToMsg = {name: msgData.name, text: msgData.text};
-      msg.value = `@${replyToMsg.name} `;
-      msg.focus();
-    }
-  });
-}
+    /* UI Controls */
+    back.onclick = () => { if (unsub) unsub(); home.style.display = "flex"; };
+    toggleUsers.onclick = () => users.classList.toggle("hidden");
+    createRoom.onclick = () => { const r = prompt("Room name"); if (r) join(r); };
 
-/* SEND MESSAGE + /commands */
-msg.addEventListener("keydown", async e=>{
-  if(e.key!=="Enter") return;
-  const text = msg.value.trim();
-  msg.value="";
-  if(!text) return;
-
-  /* ----- SLASH COMMANDS ----- */
-  if(text==="/clear"){
-    chat.innerHTML="";
-    replyToMsg = null;
-    return;
-  }
-
-  if(text==="/delete"){
-    const q=query(
-      collection(db,"rooms",room,"messages"),
-      orderBy("time","desc"),
-      limit(1)
-    );
-    const s=await getDocs(q);
-    s.forEach(d=>{
-      if(d.data().name===nick) deleteDoc(d.ref);
-    });
-    replyToMsg = null;
-    return;
-  }
-  /* -------------------------- */
-
-  await addDoc(collection(db,"rooms",room,"messages"),{
-    name: nick,
-    text,
-    time: serverTimestamp(),
-    replyTo: replyToMsg || null
-  });
-  replyToMsg = null;
-});
-
-/* UI */
-back.onclick=()=>{ if(unsub) unsub(); home.style.display="flex"; };
-toggleUsers.onclick=()=>users.classList.toggle("hidden");
-createRoom.onclick=()=>{ const r=prompt("Room name"); if(r) join(r); };
-
-/* Notifications */
-if(Notification.permission!=="granted") Notification.requestPermission();
-</script>
+    /* Notifications */
+    if (Notification.permission !== "granted") Notification.requestPermission();
+  </script>
 </body>
 </html>
