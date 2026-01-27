@@ -1,294 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MiniChat – Discord Style</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      height: 100vh;
-      font-family: Inter, sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      display: flex;
-    }
-
-    #app { display: flex; width: 100%; height: 100%; }
-
-    #sidebar {
-      width: 240px;
-      background: #161b22;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #main { flex: 1; display: flex; flex-direction: column; }
-
-    #header {
-      height: 48px;
-      background: #21262d;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      border-bottom: 1px solid #161b22;
-    }
-
-    #headerLeft { display: flex; align-items: center; gap: 10px; }
-
-    #header button {
-      background: none;
-      border: none;
-      color: #e6edf3;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    #header button:hover { color: #58a6ff; }
-
-    #chat {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      background: #0d1117;
-    }
-
-    .message {
-      margin-bottom: 14px;
-      border-radius: 8px;
-      padding: 8px;
-      background: #161b22;
-    }
-
-    .time {
-      font-size: 11px;
-      color: #8b949e;
-      margin-left: 6px;
-    }
-
-    #inputBar {
-      padding: 12px;
-      background: #21262d;
-      border-top: 1px solid #161b22;
-      display: flex;
-      gap: 6px;
-    }
-
-    #inputBar input {
-      flex: 1;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      background: #0d1117;
-      color: #e6edf3;
-    }
-
-    /* HOME */
-    #home {
-      position: absolute;
-      inset: 0;
-      background: #0d1117;
-      display: flex;
-    }
-
-    #homeLeft {
-      width: 240px;
-      background: #161b22;
-      padding: 12px;
-    }
-
-    #homeCenter {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #homeCenter .nickRow {
-      display: flex;
-      gap: 8px;
-      width: 300px;
-    }
-
-    #homeCenter input[type="text"] {
-      flex: 1;
-      padding: 14px;
-      border-radius: 8px;
-      border: none;
-      background: #161b22;
-      color: #e6edf3;
-    }
-
-    #homeCenter input[type="color"] {
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: none;
-    }
-
-    #homeCenter button {
-      width: 300px;
-      padding: 14px;
-      margin-top: 12px;
-      border-radius: 8px;
-      border: none;
-      background: #58a6ff;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .room {
-      padding: 10px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-      background: #161b22;
-      cursor: pointer;
-    }
-
-    .room:hover { background: #21262d; }
-  </style>
+<meta charset="UTF-8">
+<title>MiniChat – Discord Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0d1117;color:#e6edf3;display:flex}
+#app{display:flex;width:100%;height:100%}
+#sidebar{width:240px;background:#161b22;padding:12px;display:flex;flex-direction:column}
+#main{flex:1;display:flex;flex-direction:column}
+#header{height:48px;background:#21262d;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #161b22}
+#headerLeft{display:flex;align-items:center;gap:10px}
+#header button{background:none;border:none;color:#e6edf3;cursor:pointer}
+#header button:hover{color:#58a6ff}
+#chat{flex:1;padding:16px;overflow-y:auto;background:#0d1117}
+.message{margin-bottom:14px;border-radius:8px;padding:8px;background:#161b22}
+.time{font-size:11px;color:#8b949e;margin-left:6px}
+#inputBar{padding:12px;background:#21262d;border-top:1px solid #161b22;display:flex}
+#inputBar input{flex:1;padding:12px;border-radius:8px;border:none;background:#0d1117;color:#e6edf3}
+#home{position:absolute;inset:0;background:#0d1117;display:flex}
+#homeLeft{width:240px;background:#161b22;padding:12px}
+#homeCenter{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px}
+#homeCenter input{width:300px;padding:14px;border-radius:8px;border:none;background:#161b22;color:#e6edf3}
+#homeCenter button{width:300px;padding:14px;border-radius:8px;border:none;background:#58a6ff;color:#fff;font-weight:600;cursor:pointer}
+.room{padding:10px;margin-bottom:8px;border-radius:8px;background:#161b22;cursor:pointer}
+.room:hover{background:#21262d}
+</style>
 </head>
 
 <body>
 <div id="app">
 
-  <!-- HOME -->
-  <div id="home">
-    <div id="homeLeft">
-      <div id="roomList"></div>
-    </div>
-
-    <div id="homeCenter">
-      <div class="nickRow">
-        <input id="nick" type="text" placeholder="Username">
-        <input id="nickColor" type="color">
-      </div>
-      <button id="createRoom">Create / Join Room</button>
-    </div>
-  </div>
-
-  <!-- SIDEBAR -->
-  <div id="sidebar"></div>
-
-  <!-- MAIN -->
-  <div id="main">
-    <div id="header">
-      <div id="headerLeft">
-        <button id="back">← Return</button>
-        <span id="roomName">Select room</span>
-      </div>
-    </div>
-
-    <div id="chat"></div>
-
-    <div id="inputBar">
-      <input id="msg" placeholder="Message... (/clear, /delete, /deletelast)">
-    </div>
+<!-- HOME -->
+<div id="home">
+  <div id="homeLeft"><div id="roomList"></div></div>
+  <div id="homeCenter">
+    <input id="nick" placeholder="Username">
+    <input id="nickColor" type="color" style="width:300px"> <!-- NEW -->
+    <button id="createRoom">Create / Join Room</button>
   </div>
 </div>
 
+<div id="sidebar"></div>
+
+<div id="main">
+  <div id="header">
+    <div id="headerLeft">
+      <button id="back">← Return</button>
+      <span id="roomName">Select room</span>
+    </div>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="inputBar">
+    <input id="msg" placeholder="Message... (/clear, /delete, /deletelast)">
+  </div>
+</div>
+
+</div>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, doc, getDoc, setDoc, collection,
-  addDoc, getDocs, query, orderBy,
-  onSnapshot, serverTimestamp, deleteDoc,
-  limit, writeBatch
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import{
+getFirestore,doc,getDoc,setDoc,collection,addDoc,getDocs,
+query,orderBy,onSnapshot,serverTimestamp,deleteDoc,limit,writeBatch
+}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const app = initializeApp({
-  apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
-  projectId: "chat-fc8ef"
+const app=initializeApp({
+apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
+projectId:"chat-fc8ef"
 });
+const db=getFirestore(app);
 
-const db = getFirestore(app);
+let room="",nick="",color="#58a6ff",unsub;
 
-let room = "", nick = "", nickColor = "#58a6ff", unsub;
+const chat=document.getElementById("chat");
+const msg=document.getElementById("msg");
+const roomList=document.getElementById("roomList");
+const colorInput=document.getElementById("nickColor");
 
-const chat = document.getElementById("chat");
-const msg = document.getElementById("msg");
-const roomList = document.getElementById("roomList");
-const colorInput = document.getElementById("nickColor");
+nickInput.value=localStorage.getItem("nick")||"";
+colorInput.value=localStorage.getItem("color")||"#58a6ff"; // NEW
+colorInput.oninput=()=>localStorage.setItem("color",colorInput.value); // NEW
 
-document.getElementById("nick").value = localStorage.getItem("nick") || "";
-colorInput.value = localStorage.getItem("nickColor") || "#58a6ff";
-
-colorInput.onchange = () => {
-  localStorage.setItem("nickColor", colorInput.value);
-};
-
-async function loadRooms() {
-  roomList.innerHTML = "";
-  const s = await getDocs(collection(db, "rooms"));
-  s.forEach(r => {
-    const d = document.createElement("div");
-    d.className = "room";
-    d.textContent = "# " + r.id;
-    d.onclick = () => join(r.id);
-    roomList.appendChild(d);
-  });
+async function loadRooms(){
+roomList.innerHTML="";
+const s=await getDocs(collection(db,"rooms"));
+s.forEach(r=>{
+const d=document.createElement("div");
+d.className="room";
+d.textContent="# "+r.id;
+d.onclick=()=>join(r.id);
+roomList.appendChild(d);
+});
 }
 loadRooms();
 
-document.getElementById("createRoom").onclick = async () => {
-  const roomName = prompt("Enter room name:");
-  if (!roomName) return;
-  await setDoc(doc(db, "rooms", roomName), { password: "" });
-  loadRooms();
+createRoom.onclick=async()=>{
+const r=prompt("Enter room name:");
+if(!r)return;
+await setDoc(doc(db,"rooms",r),{password:""});
+loadRooms();
 };
 
-async function join(r) {
-  nick = document.getElementById("nick").value || "Anon";
-  nickColor = colorInput.value;
+async function join(r){
+nick=nickInput.value||"Anon";
+color=colorInput.value; // NEW
+localStorage.setItem("nick",nick);
 
-  localStorage.setItem("nick", nick);
-  localStorage.setItem("nickColor", nickColor);
+document.getElementById("home").style.display="none";
+room=r;roomName.textContent="# "+r;
 
-  document.getElementById("home").style.display = "none";
-  room = r;
-  roomName.textContent = "# " + r;
-
-  const q = query(collection(db, "rooms", room, "messages"), orderBy("time"));
-  unsub = onSnapshot(q, s => {
-    chat.innerHTML = "";
-    s.forEach(d => {
-      const m = d.data();
-      const t = m.time?.toDate();
-      chat.innerHTML += `
-        <div class="message">
-          <b style="color:${m.color || "#58a6ff"}">${m.name}</b>
-          <span class="time">${t?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || ""}</span>
-          <div>${m.text}</div>
-        </div>
-      `;
-    });
-    chat.scrollTop = chat.scrollHeight;
-  });
+const q=query(collection(db,"rooms",room,"messages"),orderBy("time"));
+unsub=onSnapshot(q,s=>{
+chat.innerHTML="";
+s.forEach(d=>{
+const m=d.data(),t=m.time?.toDate();
+chat.innerHTML+=`
+<div class="message">
+<b style="color:${m.color||"#58a6ff"}">${m.name}</b>
+<span class="time">${t?t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""}</span>
+<div>${m.text}</div>
+</div>`;
+});
+chat.scrollTop=chat.scrollHeight;
+});
 }
 
-msg.addEventListener("keydown", async e => {
-  if (e.key !== "Enter") return;
-  const text = msg.value.trim();
-  msg.value = "";
-  if (!text) return;
+msg.addEventListener("keydown",async e=>{
+if(e.key!=="Enter")return;
+const text=msg.value.trim();msg.value="";
+if(!text)return;
 
-  await addDoc(collection(db, "rooms", room, "messages"), {
-    name: nick,
-    color: nickColor,
-    text,
-    time: serverTimestamp()
-  });
+/* commands */
+if(text==="/clear"){
+const s=await getDocs(collection(db,"rooms",room,"messages"));
+const b=writeBatch(db);s.forEach(d=>b.delete(d.ref));await b.commit();return;
+}
+if(text==="/deletelast"){
+const q=query(collection(db,"rooms",room,"messages"),orderBy("time","desc"),limit(1));
+const s=await getDocs(q);s.forEach(d=>d.data().name===nick&&deleteDoc(d.ref));return;
+}
+
+await addDoc(collection(db,"rooms",room,"messages"),{
+name:nick,text,color,time:serverTimestamp() // NEW
+});
 });
 
-back.onclick = () => location.reload();
+back.onclick=()=>location.reload();
 </script>
 </body>
 </html>
