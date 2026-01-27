@@ -106,7 +106,7 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
@@ -228,8 +228,13 @@ msg.addEventListener("keydown",async e=>{
   if(text==="/delete"){
     if(!confirm("Delete entire room and all messages?")) return;
     try{
+      // Delete all messages
       const msgs=await getDocs(collection(db,"rooms",room,"messages"));
       for(const d of msgs.docs) await deleteDoc(d.ref);
+      // Delete typing status
+      const typingDocs=await getDocs(collection(db,"rooms",room,"typing"));
+      for(const d of typingDocs.docs) await deleteDoc(d.ref);
+      // Delete room itself
       await deleteDoc(doc(db,"rooms",room));
       alert("Room deleted"); location.reload();
     }catch(err){console.error(err); alert("Failed to delete room");}
