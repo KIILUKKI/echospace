@@ -109,9 +109,14 @@
       const existingRoom = await getDoc(doc(db, "rooms", roomName));
       if (existingRoom.exists()) return alert("Room already exists!");
 
+      // Kysy salasanaa huoneelle
+      const password = prompt("Set a password for the room (optional):");
+      const roomData = { password: password || "" };
+
       // Create room in Firestore
-      await setDoc(doc(db, "rooms", roomName), { password: "" }); // Optionally, add a password field
+      await setDoc(doc(db, "rooms", roomName), roomData);
       loadRooms(); // Reload the rooms list
+      alert(`Room #${roomName} created successfully!`);
     };
 
     /* JOIN ROOM */
