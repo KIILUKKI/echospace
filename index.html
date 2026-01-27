@@ -99,6 +99,7 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
     <button id="emojiBtn">😊</button>
     <div id="emojiPicker"></div>
   </div>
+
 </div>
 
 </div>
@@ -143,13 +144,21 @@ async function loadRooms(){
 // Create/join room
 document.getElementById("createRoom").onclick=async ()=>{
   const r=prompt("Room name"); if(!r)return;
+  const p=prompt("Password (optional)"); if(p===null)return;
   const roomRef=doc(db,"rooms",r);
-  if(!(await getDoc(roomRef)).exists()) await setDoc(roomRef,{created:serverTimestamp()});
+  if(!(await getDoc(roomRef)).exists()) await setDoc(roomRef,{password:p||"", created:serverTimestamp()});
   joinRoom(r);
 };
 
 // Join room
 async function joinRoom(r){
+  const roomRef=doc(db,"rooms",r);
+  const snap=await getDoc(roomRef);
+  if(!snap.exists()) return alert("Room doesn't exist");
+  const pass = prompt("Password");
+  if(pass===null) return;
+  if(snap.data().password!==pass) return alert("Wrong password");
+
   nick=document.getElementById("nick").value||("Anon"+Math.floor(Math.random()*1000));
   nickColor=document.getElementById("nickColor").value;
   localStorage.setItem("nick",nick);
