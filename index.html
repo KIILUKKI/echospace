@@ -18,8 +18,9 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
 #nickColor { width: 36px; height: 36px; border: none; cursor: pointer; outline: none; }
 
 /* ROOMS */
-.room { padding: 10px; border-radius: 8px; background: #161b22; margin-bottom: 8px; cursor: pointer; }
+.room { padding: 10px; border-radius: 8px; background: #161b22; margin-bottom: 8px; cursor: pointer; display:flex; justify-content:space-between; align-items:center;}
 .room:hover { background: #21262d; }
+.deleteRoomBtn { background:none; border:none; color:#f56565; cursor:pointer; font-size:12px; }
 
 /* MAIN */
 #main { flex: 1; display: flex; flex-direction: column; display: none; }
@@ -54,6 +55,10 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
 
 /* Typing indicator */
 #typingIndicator { font-size:12px; color:#8b949e; margin:2px 0 0 0; }
+
+/* CREATE/JOIN BUTTON */
+#createRoom { padding: 12px 24px; border-radius: 12px; background:#58a6ff; color:#000; border:none; font-weight:600; cursor:pointer; font-size:16px; transition:.15s; }
+#createRoom:hover { background:#3f83d0; }
 </style>
 </head>
 <body>
@@ -101,7 +106,7 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-  getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, writeBatch, limit 
+  getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, writeBatch, limit, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -133,12 +138,28 @@ async function loadRooms() {
   s.forEach(r => {
     const d = document.createElement("div");
     d.className = "room";
-    d.textContent = "# " + r.id;
-    d.onclick = () => joinRoom(r.id);
+    d.innerHTML = `<span># ${r.id}</span><button class="deleteRoomBtn">x</button>`;
+    d.onclick = (e)=>{
+      if(e.target.classList.contains("deleteRoomBtn")) {
+        if(confirm("Delete this room?")) deleteRoom(r.id);
+        e.stopPropagation();
+      } else {
+        joinRoom(r.id);
+      }
+    }
     roomList.appendChild(d);
   });
 }
-loadRooms();
+async function deleteRoom(r){
+  const roomRef = doc(db,"rooms",r);
+  const msgsRef = collection(db,"rooms",r,"messages");
+  const batch = writeBatch(db);
+  const msgs = await getDocs(msgsRef);
+  msgs.forEach(d=>batch.delete(d.ref));
+  batch.delete(roomRef);
+  await batch.commit();
+  loadRooms();
+}
 
 // Create or join room
 document.getElementById("createRoom").onclick = async () => {
@@ -153,100 +174,91 @@ document.getElementById("createRoom").onclick = async () => {
 
 // Join room
 async function joinRoom(r, providedPass = null) {
-  nick = document.getElementById("nick").value || ("Anon" + Math.floor(Math.random() * 1000));
+  nick = document.getElementById("nick").value || ("Anon" + Math.floor(Math.random()*1000));
   nickColor = document.getElementById("nickColor").value;
   localStorage.setItem("nick", nick);
   localStorage.setItem("nickColor", nickColor);
 
   const roomRef = doc(db, "rooms", r);
   const snap = await getDoc(roomRef);
-  if (!snap.exists()) return alert("Room does not exist");
+  if(!snap.exists()) return alert("Room does not exist");
   const roomPass = snap.data().password || "";
-  
-  if (providedPass === null && roomPass !== "") {
-    providedPass = prompt("Password required for this room:");
-    if (providedPass === null) return;
-  }
-  if (roomPass !== providedPass) return alert("Wrong password");
+  if(providedPass===null && roomPass!=="") providedPass=prompt("Password required:");
+  if(roomPass!==providedPass) return alert("Wrong password");
 
-  document.getElementById("home").style.display = "none";
-  document.getElementById("main").style.display = "flex";
-  room = r;
-  roomName.textContent = "# " + r;
+  document.getElementById("home").style.display="none";
+  document.getElementById("main").style.display="flex";
+  room = r; roomName.textContent="# "+r;
 
-  const typingRef = collection(db, "rooms", room, "typing");
+  const typingRef = collection(db,"rooms",room,"typing");
 
   // Listen messages
-  onSnapshot(query(collection(db, "rooms", room, "messages"), orderBy("time")), snapshot => {
-    chat.innerHTML = "";
-    snapshot.forEach(d => {
-      const m = d.data();
-      const t = m.time?.toDate();
-      chat.innerHTML += `
+  onSnapshot(query(collection(db,"rooms",room,"messages"),orderBy("time")), snapshot=>{
+    chat.innerHTML="";
+    snapshot.forEach(d=>{
+      const m=d.data();
+      const t=m.time?.toDate();
+      chat.innerHTML+=`
       <div class="message">
         <div class="avatar" style="background:${m.color}">${m.name[0]}</div>
         <div class="msg">
-          ${m.reply ? `<div class="reply-preview"><b>${m.reply.name}</b>: ${m.reply.text}</div>` : ""}
+          ${m.reply?`<div class="reply-preview"><b>${m.reply.name}</b>: ${m.reply.text}</div>`:""}
           <b style="color:${m.color}">${m.name}</b>
-          <span class="time">${t ? t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}</span>
+          <span class="time">${t?t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):""}</span>
           <div>${m.text}</div>
-          ${!m.reply ? `<div class="reply-btn" data-name="${m.name}" data-text="${m.text}">reply</div>` : ""}
+          ${!m.reply?`<div class="reply-btn" data-name="${m.name}" data-text="${m.text}">reply</div>`:""}
         </div>
       </div>`;
     });
-    chat.scrollTop = chat.scrollHeight;
+    chat.scrollTop=chat.scrollHeight;
   });
 
   // Typing indicator
-  onSnapshot(typingRef, snapshot => {
-    const names = [];
-    snapshot.forEach(doc => {
-      if(doc.id !== nick && doc.data().typing) names.push(doc.id);
-    });
-    if(names.length === 0) typingIndicator.textContent = "";
-    else if(names.length === 1) typingIndicator.textContent = `${names[0]} is typing...`;
-    else typingIndicator.textContent = `${names.join(", ")} are typing...`;
+  onSnapshot(typingRef,snapshot=>{
+    const names=[];
+    snapshot.forEach(doc=>{ if(doc.id!==nick && doc.data().typing) names.push(doc.id); });
+    typingIndicator.textContent=names.length===0?"":names.length===1?`${names[0]} is typing...`:`${names.join(", ")} are typing...`;
   });
 
-  // Update typing status
+  // Update typing
   let typingTimeout;
-  msg.addEventListener("input", () => {
-    setDoc(doc(typingRef, nick), { typing: true });
+  msg.addEventListener("input", ()=>{
+    setDoc(doc(typingRef,nick),{typing:true});
     clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => setDoc(doc(typingRef, nick), { typing: false }), 1500);
+    typingTimeout=setTimeout(()=>setDoc(doc(typingRef,nick),{typing:false}),1500);
   });
 }
 
 // Reply
-chat.addEventListener("click", e => {
-  const b = e.target.closest(".reply-btn");
-  if (!b) return;
-  replyTo = { name: b.dataset.name, text: b.dataset.text };
-  replyBox.style.display = "block";
-  replyBox.innerHTML = `Replying to <span>${replyTo.name}</span><button onclick="cancelReply()">x</button>`;
+chat.addEventListener("click", e=>{
+  const b=e.target.closest(".reply-btn");
+  if(!b) return;
+  replyTo={name:b.dataset.name,text:b.dataset.text};
+  replyBox.style.display="block";
+  replyBox.innerHTML=`Replying to <span>${replyTo.name}</span><button onclick="cancelReply()">x</button>`;
 });
-window.cancelReply = () => { replyTo=null; replyBox.style.display="none"; }
+window.cancelReply=()=>{replyTo=null; replyBox.style.display="none";}
 
-// Send message & commands
-msg.addEventListener("keydown", async e => {
-  if (e.key !== "Enter") return;
-  const text = msg.value.trim(); msg.value = ""; if (!text) return;
+// Send message
+msg.addEventListener("keydown", async e=>{
+  if(e.key!=="Enter") return;
+  const text=msg.value.trim(); msg.value=""; if(!text) return;
 
   if(text==="/clear"){
-    const s = await getDocs(collection(db,"rooms",room,"messages"));
-    const b = writeBatch(db); s.forEach(d=>b.delete(d.ref)); await b.commit(); return;
+    const s=await getDocs(collection(db,"rooms",room,"messages"));
+    const b=writeBatch(db); s.forEach(d=>b.delete(d.ref)); await b.commit(); return;
   }
   if(text==="/deletelast"){
-    const s = await getDocs(query(collection(db,"rooms",room,"messages"),orderBy("time","desc"),limit(1)));
-    const b = writeBatch(db); s.forEach(d=>{ if(d.data().name===nick) b.delete(d.ref); }); await b.commit(); return;
+    const s=await getDocs(query(collection(db,"rooms",room,"messages"),orderBy("time","desc"),limit(1)));
+    const b=writeBatch(db); s.forEach(d=>{ if(d.data().name===nick)b.delete(d.ref); }); await b.commit(); return;
   }
   if(text==="/delete"){
-    if(!confirm("Delete the entire room and all messages?")) return;
+    if(!confirm("Delete entire room and messages?")) return;
     try{
-      const roomRef = doc(db,"rooms",room);
-      const msgsRef = collection(db,"rooms",room,"messages");
-      const b = writeBatch(db);
-      const msgs = await getDocs(msgsRef);
+      const roomRef=doc(db,"rooms",room);
+      const msgsRef=collection(db,"rooms",room,"messages");
+      const b=writeBatch(db);
+      const msgs=await getDocs(msgsRef);
       msgs.forEach(d=>b.delete(d.ref));
       b.delete(roomRef);
       await b.commit();
@@ -261,19 +273,18 @@ msg.addEventListener("keydown", async e => {
 });
 
 // Back button
-document.getElementById("back").onclick = () => location.reload();
+document.getElementById("back").onclick=()=>location.reload();
 
 // Notifications
 if(Notification.permission!=="granted") Notification.requestPermission();
 
 // Emoji picker
-const emojis = ["😀","😂","😎","😍","👍","❤️","🎉","😢","🤔","🙌","🔥","💯"];
-emojiPicker.innerHTML=""; emojis.forEach(e=>{
-  const b=document.createElement("div"); b.textContent=e; b.onclick=()=> msg.value+=e; emojiPicker.appendChild(b);
-});
-emojiBtn.onclick = e=> { e.preventDefault(); emojiPicker.style.display=emojiPicker.style.display==="none"?"flex":"none"; };
-msg.addEventListener("focus", ()=> emojiPicker.style.display="none");
+const emojis=["😀","😂","😎","😍","👍","❤️","🎉","😢","🤔","🙌","🔥","💯"];
+emojiPicker.innerHTML=""; emojis.forEach(e=>{ const b=document.createElement("div"); b.textContent=e; b.onclick=()=> msg.value+=e; emojiPicker.appendChild(b); });
+emojiBtn.onclick=e=>{e.preventDefault(); emojiPicker.style.display=emojiPicker.style.display==="none"?"flex":"none";}
+msg.addEventListener("focus",()=>emojiPicker.style.display="none");
 
+loadRooms();
 </script>
 </body>
 </html>
