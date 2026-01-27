@@ -65,7 +65,7 @@
     import {
       getFirestore, doc, getDoc, setDoc, collection,
       addDoc, getDocs, query, orderBy,
-      onSnapshot, serverTimestamp, deleteDoc, limit
+      onSnapshot, serverTimestamp, deleteDoc, limit, writeBatch
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const app = initializeApp({
@@ -174,20 +174,26 @@
 
         const batch = writeBatch(db);
 
-        // Delete all messages
-        const messages = await getDocs(messagesRef);
-        messages.forEach(d => batch.delete(d.ref));
+        try {
+          // Delete all messages
+          const messages = await getDocs(messagesRef);
+          messages.forEach(d => batch.delete(d.ref));
 
-        // Delete all users
-        const users = await getDocs(usersRef);
-        users.forEach(u => batch.delete(u.ref));
+          // Delete all users
+          const users = await getDocs(usersRef);
+          users.forEach(u => batch.delete(u.ref));
 
-        // Delete the room itself
-        batch.delete(roomRef);
+          // Delete the room itself
+          batch.delete(roomRef);
 
-        await batch.commit();
-        alert("Room and all its messages have been deleted.");
-        location.reload(); // Refresh page
+          // Commit the batch
+          await batch.commit();
+          alert("Room and all its messages have been deleted.");
+          location.reload(); // Refresh the page
+        } catch (error) {
+          console.error("Error deleting room data: ", error);
+          alert("Error deleting the room. Please try again.");
+        }
         return;
       }
 
