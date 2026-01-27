@@ -87,7 +87,7 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
 
   <div id="replyBox"></div>
   <div id="inputBar">
-    <input id="msg" placeholder="Message... (/clear /deletelast)">
+    <input id="msg" placeholder="Message... (/clear /delete /deletelast)">
   </div>
 </div>
 
@@ -177,14 +177,39 @@ replyBox.innerHTML=`Replying to <span>${replyTo.name}</span><button onclick="can
 };
 window.cancelReply=()=>{replyTo=null;replyBox.style.display="none"};
 
-/* SEND */
+/* SEND + COMMANDS */
 msg.addEventListener("keydown",async e=>{
 if(e.key!=="Enter")return;
 const text=msg.value.trim();msg.value="";
 if(!text)return;
-if(text==="/clear"){const s=await getDocs(collection(db,"rooms",room,"messages"));const b=writeBatch(db);s.forEach(d=>b.delete(d.ref));await b.commit();return;}
-if(text==="/deletelast"){const q=query(collection(db,"rooms",room,"messages"),orderBy("time","desc"),limit(1));const s=await getDocs(q);s.forEach(d=>{if(d.data().name===nick)deleteDoc(d.ref)});return;}
 
+if(text==="/clear"){
+const s=await getDocs(collection(db,"rooms",room,"messages"));
+const b=writeBatch(db);s.forEach(d=>b.delete(d.ref));await b.commit();return;
+}
+
+if(text==="/deletelast"){
+const q=query(collection(db,"rooms",room,"messages"),orderBy("time","desc"),limit(1));
+const s=await getDocs(q);s.forEach(d=>{if(d.data().name===nick)deleteDoc(d.ref)});return;
+}
+
+if(text==="/delete"){
+if(!confirm("Delete the entire room and all messages?"))return;
+try{
+const roomRef=doc(db,"rooms",room);
+const messagesRef=collection(db,"rooms",room,"messages");
+const usersRef=collection(db,"rooms",room,"users");
+const b=writeBatch(db);
+const msgs=await getDocs(messagesRef);msgs.forEach(d=>b.delete(d.ref));
+const users=await getDocs(usersRef);users.forEach(u=>b.delete(u.ref));
+b.delete(roomRef);
+await b.commit();
+alert("Room deleted");location.reload();
+}catch(err){console.error(err);alert("Failed to delete room")}
+return;
+}
+
+/* NORMAL MESSAGE */
 await addDoc(collection(db,"rooms",room,"messages"),{name:nick,text,reply:replyTo,color:nickColor,time:serverTimestamp()});
 replyTo=null;replyBox.style.display="none";
 });
