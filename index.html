@@ -213,7 +213,9 @@
     });
 
     /* UI Controls */
-    back.onclick = () => { if (unsub) unsub(); home.style.display = "flex"; };
+    back.onclick = () => {
+      location.reload(); // Refresh the page when "Return" is clicked
+    };
     toggleUsers.onclick = () => users.classList.toggle("hidden");
     createRoom.onclick = () => { const r = prompt("Room name"); if (r) join(r); };
 
