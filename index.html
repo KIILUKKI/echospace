@@ -8,9 +8,7 @@
     * {box-sizing: border-box;}
     body {margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #1e1f22; color: #dbdee1; display: flex;}
     #app {display: flex; width: 100%; height: 100%;}
-    #sidebar, #users {width: 240px; background: #2b2d31; padding: 12px; transition: .25s;}
-    #sidebar {display: flex; flex-direction: column;}
-    #users.hidden {width: 0; padding: 0; overflow: hidden;}
+    #sidebar {width: 240px; background: #2b2d31; padding: 12px; display: flex; flex-direction: column;}
     #main {flex: 1; display: flex; flex-direction: column;}
     #header {height: 48px; background: #313338; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid #1f2023;}
     #headerLeft {display: flex; align-items: center; gap: 10px;}
@@ -51,7 +49,6 @@
           <button id="back">← Return</button>
           <span id="roomName">Select room</span>
         </div>
-        <span id="toggleUsers">👥</span>
       </div>
 
       <div id="chat"></div>
@@ -60,12 +57,6 @@
       <div id="inputBar">
         <input id="msg" placeholder="Message... (/clear, /delete, /deletelast)">
       </div>
-    </div>
-
-    <!-- USERS -->
-    <div id="users" class="hidden">
-      <b>Online</b>
-      <div id="userList"></div>
     </div>
   </div>
 
@@ -129,25 +120,6 @@
       await setDoc(userRef, { online: true, lastActivity: serverTimestamp() });
       window.addEventListener("beforeunload", () => deleteDoc(userRef));
 
-      /* Online-lista */
-      const userRefCollection = collection(db, "rooms", room, "users");
-      const userRefQuery = query(userRefCollection);
-      onSnapshot(userRefQuery, s => {
-        userList.innerHTML = "";
-        const now = new Date().getTime();
-        s.forEach(u => {
-          const user = u.data();
-          const lastActivity = user.lastActivity ? user.lastActivity.seconds * 1000 : now;
-          if (now - lastActivity < 180000) {
-            const d = document.createElement("div");
-            d.textContent = "🟢 " + u.id;
-            userList.appendChild(d);
-          } else {
-            deleteDoc(u.ref);  // Remove inactive users
-          }
-        });
-      });
-
       /* Messages + notifications */
       const q = query(collection(db, "rooms", room, "messages"), orderBy("time"));
       unsub = onSnapshot(q, s => {
@@ -185,30 +157,37 @@
 
       /* ----- SLASH COMMANDS ----- */
       if (text === "/clear") {
+        // Clear all messages in the room
         const q = query(collection(db, "rooms", room, "messages"));
         const s = await getDocs(q);
-        s.forEach(d => deleteDoc(d.ref)); // Remove all messages
+        const batch = writeBatch(db);
+        s.forEach(d => batch.delete(d.ref));
+        await batch.commit();
         return;
       }
 
       if (text === "/delete") {
-        // Delete the entire room and all its messages
+        // Delete the entire room and all its messages and users
         const roomRef = doc(db, "rooms", room);
         const messagesRef = collection(db, "rooms", room, "messages");
         const usersRef = collection(db, "rooms", room, "users");
 
-        // Delete all messages in the room
+        const batch = writeBatch(db);
+
+        // Delete all messages
         const messages = await getDocs(messagesRef);
-        messages.forEach(d => deleteDoc(d.ref));
+        messages.forEach(d => batch.delete(d.ref));
 
-        // Delete all users in the room
+        // Delete all users
         const users = await getDocs(usersRef);
-        users.forEach(u => deleteDoc(u.ref));
+        users.forEach(u => batch.delete(u.ref));
 
-        // Finally, delete the room itself
-        await deleteDoc(roomRef);
+        // Delete the room itself
+        batch.delete(roomRef);
 
+        await batch.commit();
         alert("Room and all its messages have been deleted.");
+        location.reload(); // Refresh page
         return;
       }
 
@@ -238,8 +217,6 @@
     back.onclick = () => {
       location.reload(); // Refresh the page when "Return" is clicked
     };
-    toggleUsers.onclick = () => users.classList.toggle("hidden");
-    createRoom.onclick = () => { const r = prompt("Room name"); if (r) join(r); };
 
     /* Notifications */
     if (Notification.permission !== "granted") Notification.requestPermission();
