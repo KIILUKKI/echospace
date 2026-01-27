@@ -82,6 +82,7 @@
     const chat = document.getElementById("chat");
     const typingEl = document.getElementById("typing");
     const msg = document.getElementById("msg");
+    const roomList = document.getElementById("roomList");
 
     /* PERSIST */
     document.getElementById("nick").value = localStorage.getItem("nick") || "";
@@ -99,6 +100,19 @@
       });
     }
     loadRooms();
+
+    /* CREATE ROOM */
+    document.getElementById("createRoom").onclick = async () => {
+      const roomName = prompt("Enter room name:");
+      if (!roomName) return;
+
+      const existingRoom = await getDoc(doc(db, "rooms", roomName));
+      if (existingRoom.exists()) return alert("Room already exists!");
+
+      // Create room in Firestore
+      await setDoc(doc(db, "rooms", roomName), { password: "" }); // Optionally, add a password field
+      loadRooms(); // Reload the rooms list
+    };
 
     /* JOIN ROOM */
     async function join(r) {
@@ -186,13 +200,11 @@
           // Delete the room itself
           batch.delete(roomRef);
 
-          // Commit the batch
           await batch.commit();
           alert("Room and all its messages have been deleted.");
-          location.reload(); // Refresh the page
+          location.reload(); // Refresh page
         } catch (error) {
-          console.error("Error deleting room data: ", error);
-          alert("Error deleting the room. Please try again.");
+          console.error("Error deleting room: ", error);
         }
         return;
       }
