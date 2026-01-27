@@ -17,12 +17,14 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#1e1f22;color
 #header button{background:none;border:none;color:#dbdee1;cursor:pointer;font-size:14px;}
 #header button:hover{color:#fff;}
 #chat{flex:1;padding:16px;overflow-y:auto;}
-.message{margin-bottom:14px;}
+.message{margin-bottom:14px;position:relative;}
 .message b{color:#fff;}
 .time{font-size:11px;color:#949ba4;margin-left:6px;}
 #typing{height:18px;font-size:12px;color:#949ba4;padding-left:16px;}
 #inputBar{padding:12px;background:#383a40;border-top:1px solid #1f2023;display:flex;gap:6px;}
 #inputBar input{flex:1;padding:12px;border-radius:8px;border:none;background:#1e1f22;color:#dbdee1;}
+.replyBtn{position:absolute;right:6px;top:6px;font-size:10px;background:none;border:none;color:#949ba4;cursor:pointer;}
+.replyBtn:hover{color:#fff;}
 #users{width:220px;background:#2b2d31;padding:12px;transition:.25s;}
 #users.hidden{width:0;padding:0;overflow:hidden;}
 #home{position:absolute;inset:0;background:#1e1f22;display:flex;}
@@ -92,6 +94,7 @@ const db = getFirestore(app);
 /* STATE */
 let room="", nick="", unsub;
 let lastNotifiedTime=null;
+let replyToMsg = null; // tallentaa reply-viestin
 
 /* ELEMENTS */
 const chat = document.getElementById("chat");
@@ -155,20 +158,25 @@ async function join(r){
     typingEl.textContent=arr.length>0 ? arr.join(", ")+" is typing..." : "";
   });
 
-  /* Messages + notifications */
+  /* Messages + reply + notifications */
   const q=query(collection(db,"rooms",room,"messages"),orderBy("time"));
   unsub=onSnapshot(q,s=>{
     chat.innerHTML="";
     s.forEach(d=>{
       const m=d.data();
       const t=m.time?.toDate();
-      const timeStr = t ? t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : "";
+      let replyHtml = "";
+      if(m.replyTo){
+        replyHtml = `<div style="font-size:11px;color:#888;margin-bottom:2px;">Replying to <b>${m.replyTo.name}</b>: ${m.replyTo.text.substring(0,30)}...</div>`;
+      }
 
       chat.innerHTML+=`
         <div class="message">
+          ${replyHtml}
           <b>${m.name}</b>
-          <span class="time">${timeStr}</span>
+          <span class="time">${t?.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})||""}</span>
           <div>${m.text}</div>
+          <button class="replyBtn" data-id="${d.id}">↩</button>
         </div>
       `;
 
@@ -179,6 +187,17 @@ async function join(r){
       if(t) lastNotifiedTime = t;
     });
     chat.scrollTop = chat.scrollHeight;
+  });
+
+  /* Reply button */
+  chat.addEventListener("click", e=>{
+    if(e.target.classList.contains("replyBtn")){
+      const msgId = e.target.dataset.id;
+      const msgData = s.docs.find(doc=>doc.id===msgId).data();
+      replyToMsg = {name: msgData.name, text: msgData.text};
+      msg.value = `@${replyToMsg.name} `;
+      msg.focus();
+    }
   });
 }
 
@@ -192,6 +211,7 @@ msg.addEventListener("keydown", async e=>{
   /* ----- SLASH COMMANDS ----- */
   if(text==="/clear"){
     chat.innerHTML="";
+    replyToMsg = null;
     return;
   }
 
@@ -205,15 +225,18 @@ msg.addEventListener("keydown", async e=>{
     s.forEach(d=>{
       if(d.data().name===nick) deleteDoc(d.ref);
     });
+    replyToMsg = null;
     return;
   }
   /* -------------------------- */
 
   await addDoc(collection(db,"rooms",room,"messages"),{
-    name:nick,
+    name: nick,
     text,
-    time:serverTimestamp()
+    time: serverTimestamp(),
+    replyTo: replyToMsg || null
   });
+  replyToMsg = null;
 });
 
 /* UI */
