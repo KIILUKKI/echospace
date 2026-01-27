@@ -20,7 +20,6 @@ body { margin: 0; height: 100vh; font-family: Inter, sans-serif; background: #0b
 /* ROOMS */
 .room { padding: 10px; border-radius: 8px; background: #161b22; margin-bottom: 8px; cursor: pointer; display:flex; justify-content:space-between; align-items:center;}
 .room:hover { background: #21262d; }
-.deleteRoomBtn { background:none; border:none; color:#f56565; cursor:pointer; font-size:12px; }
 
 /* MAIN */
 #main { flex: 1; display: flex; flex-direction: column; display: none; }
@@ -138,48 +137,31 @@ async function loadRooms() {
   s.forEach(r => {
     const d = document.createElement("div");
     d.className = "room";
-    d.innerHTML = `<span># ${r.id}</span><button class="deleteRoomBtn">x</button>`;
-    d.onclick = (e)=>{
-      if(e.target.classList.contains("deleteRoomBtn")) {
-        if(confirm("Delete this room?")) deleteRoom(r.id);
-        e.stopPropagation();
-      } else {
-        joinRoom(r.id);
-      }
-    }
+    d.textContent = "# "+r.id; // HUOM: ei poistoa lobbyssä
+    d.onclick = ()=>joinRoom(r.id);
     roomList.appendChild(d);
   });
-}
-async function deleteRoom(r){
-  const roomRef = doc(db,"rooms",r);
-  const msgsRef = collection(db,"rooms",r,"messages");
-  const batch = writeBatch(db);
-  const msgs = await getDocs(msgsRef);
-  msgs.forEach(d=>batch.delete(d.ref));
-  batch.delete(roomRef);
-  await batch.commit();
-  loadRooms();
 }
 
 // Create or join room
 document.getElementById("createRoom").onclick = async () => {
-  const r = prompt("Room name"); if (!r) return;
+  const r = prompt("Room name"); if(!r) return;
   const pass = prompt("Password (optional)"); 
   const roomRef = doc(db, "rooms", r);
-  if (!(await getDoc(roomRef)).exists()) {
-    await setDoc(roomRef, { password: pass || "", created: serverTimestamp() });
+  if(!(await getDoc(roomRef)).exists()){
+    await setDoc(roomRef, {password: pass||"", created: serverTimestamp()});
   }
-  joinRoom(r, pass || "");
+  joinRoom(r, pass||"");
 };
 
 // Join room
-async function joinRoom(r, providedPass = null) {
-  nick = document.getElementById("nick").value || ("Anon" + Math.floor(Math.random()*1000));
+async function joinRoom(r, providedPass=null){
+  nick = document.getElementById("nick").value || ("Anon"+Math.floor(Math.random()*1000));
   nickColor = document.getElementById("nickColor").value;
   localStorage.setItem("nick", nick);
   localStorage.setItem("nickColor", nickColor);
 
-  const roomRef = doc(db, "rooms", r);
+  const roomRef = doc(db,"rooms",r);
   const snap = await getDoc(roomRef);
   if(!snap.exists()) return alert("Room does not exist");
   const roomPass = snap.data().password || "";
@@ -188,7 +170,7 @@ async function joinRoom(r, providedPass = null) {
 
   document.getElementById("home").style.display="none";
   document.getElementById("main").style.display="flex";
-  room = r; roomName.textContent="# "+r;
+  room=r; roomName.textContent="# "+r;
 
   const typingRef = collection(db,"rooms",room,"typing");
 
@@ -237,7 +219,7 @@ chat.addEventListener("click", e=>{
   replyBox.style.display="block";
   replyBox.innerHTML=`Replying to <span>${replyTo.name}</span><button onclick="cancelReply()">x</button>`;
 });
-window.cancelReply=()=>{replyTo=null; replyBox.style.display="none";}
+window.cancelReply=()=>{replyTo=null; replyBox.style.display="none"}
 
 // Send message
 msg.addEventListener("keydown", async e=>{
