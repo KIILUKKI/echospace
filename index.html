@@ -192,6 +192,7 @@ const db = getFirestore(app);
 
 /* STATE */
 let room = "", nick = "", replyingTo = null;
+let lastNotifiedTime = null;
 
 /* ELEMENTS */
 const chat = document.getElementById("chat");
@@ -200,6 +201,11 @@ const roomList = document.getElementById("roomList");
 const replyBox = document.getElementById("replyBox");
 const nickInput = document.getElementById("nick");
 const nickColorInput = document.getElementById("nickColor");
+
+/* NOTIFICATION PERMISSION */
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
 
 /* PERSIST */
 nickInput.value = localStorage.getItem("nick") || "";
@@ -221,7 +227,7 @@ async function loadRooms() {
 }
 loadRooms();
 
-/* CREATE ROOM (password säilyy) */
+/* CREATE ROOM (password OK) */
 createRoom.onclick = async () => {
   const roomName = prompt("Enter room name:");
   if (!roomName) return;
@@ -237,7 +243,7 @@ createRoom.onclick = async () => {
   loadRooms();
 };
 
-/* JOIN (password tarkistus OK) */
+/* JOIN */
 async function join(r) {
   const pass = prompt("Password");
   if (pass === null) return;
@@ -255,12 +261,29 @@ async function join(r) {
   room = r;
   roomName.textContent = "# " + r;
 
+  lastNotifiedTime = null;
+
   const q = query(collection(db, "rooms", room, "messages"), orderBy("time"));
   onSnapshot(q, s => {
     chat.innerHTML = "";
+
     s.forEach(d => {
       const m = d.data();
       const t = m.time?.toDate();
+
+      /* 🔔 NOTIFICATION */
+      if (
+        t &&
+        document.hidden &&
+        m.name !== nick &&
+        Notification.permission === "granted" &&
+        (!lastNotifiedTime || t > lastNotifiedTime)
+      ) {
+        new Notification("New message in #" + room, {
+          body: `${m.name}: ${m.text}`
+        });
+        lastNotifiedTime = t;
+      }
 
       chat.innerHTML += `
       <div class="message">
@@ -277,10 +300,13 @@ async function join(r) {
           </div>` : ""}
 
         <b style="color:${m.color || "#58a6ff"}">${m.name}</b>
-        <span class="time">${t?.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || ""}</span>
+        <span class="time">
+          ${t?.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || ""}
+        </span>
         <div>${m.text}</div>
       </div>`;
     });
+
     chat.scrollTop = chat.scrollHeight;
   });
 }
