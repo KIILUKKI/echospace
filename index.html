@@ -285,6 +285,10 @@ nickColor = localStorage.getItem("nickColor")||"#58a6ff";
 nickColorInput.value = nickColor;
 nickColorCircle.style.background = nickColor;
 
+// Klikkaa ympyrää → avaa oikean color pickerin
+nickColorCircle.onclick = () => nickColorInput.click();
+
+// Päivitä väri ympyrään ja localStorageen
 nickColorInput.oninput = () => {
   nickColorCircle.style.background = nickColorInput.value;
   localStorage.setItem("nickColor", nickColorInput.value);
