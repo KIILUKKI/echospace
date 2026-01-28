@@ -4,53 +4,99 @@
 <meta charset="UTF-8">
 <title>MiniChat</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color:#e6edf3}
-#app{width:100%;height:100%;position:relative;display:flex;flex-direction:column}
+#app{width:100%;height:100%;position:relative}
 
-/* LOGIN */
-#login{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;background:#0b0f14;flex-direction:column}
-#login input{padding:12px;margin:6px;border-radius:8px;border:none;background:#21262d;color:#fff;width:200px}
-#login button{padding:12px 24px;margin-top:12px;border:none;border-radius:10px;background:#58a6ff;color:#000;font-weight:600;cursor:pointer}
-
-/* LOBBY */
-#home{display:none;flex:1;flex-direction:column;position:relative}
-#homeTop{display:flex;align-items:center;gap:12px;padding:14px}
-#nickDisplay{flex:1;padding:10px;border-radius:8px;background:#21262d;color:#fff;display:flex;align-items:center;justify-content:space-between}
-#nickColor{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer}
-#createRoom{padding:10px 16px;border-radius:10px;background:#58a6ff;color:#000;border:none;font-weight:600;cursor:pointer;margin-left:12px}
-
-#homeLeft{width:260px;height:100%;background:#161b22;padding:14px;overflow-y:auto;border-right:1px solid #0d1117;position:absolute;top:0;bottom:0;left:0}
+/* HOME */
+#home{position:absolute;inset:0;display:flex;background:#0b0f14}
+#homeLeft{
+  width:260px;height:100%;
+  background:#161b22;padding:14px;
+  overflow-y:auto;border-right:1px solid #0d1117
+}
 #homeLeft h2{margin:0 0 14px}
-.room{padding:10px 12px;border-radius:8px;background:#21262d;margin-bottom:8px;cursor:pointer}
+.room{
+  padding:10px 12px;border-radius:8px;
+  background:#21262d;margin-bottom:8px;
+  cursor:pointer
+}
 .room:hover{background:#58a6ff;color:#000}
+#homeCenter{
+  flex:1;display:flex;flex-direction:column;
+  justify-content:center;align-items:center
+}
+#nickRow{display:flex;gap:12px;width:320px;margin-bottom:20px}
+#nick{flex:1;padding:12px;border-radius:10px;border:none;background:#21262d;color:#fff}
+#nickColor{width:42px;height:42px;border-radius:50%;border:none}
+#createRoom{
+  padding:14px 28px;border-radius:12px;
+  background:#58a6ff;color:#000;
+  border:none;font-weight:600;cursor:pointer
+}
 
-/* CHAT */
+/* MAIN */
 #main{display:none;height:100%;flex-direction:column}
-#header{height:52px;background:#161b22;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid #0d1117}
-#header button{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;margin-right:10px}
+#header{
+  height:52px;background:#161b22;
+  display:flex;align-items:center;
+  padding:0 14px;border-bottom:1px solid #0d1117
+}
+#header button{
+  background:none;border:none;color:#fff;
+  font-size:18px;cursor:pointer;margin-right:10px
+}
 #chatWrapper{display:flex;flex:1;overflow:hidden}
 #chatSidebar{width:260px;background:#161b22;border-right:1px solid #0d1117}
 #chatWrapperMain{flex:1;display:flex;flex-direction:column}
-#chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+#chat{
+  flex:1;padding:16px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:10px
+}
 
+/* messages */
 .message{display:flex;gap:10px}
-.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;color:#000}
-.msg{background:#161b22;padding:10px 14px;border-radius:10px;width:100%;position:relative}
+.avatar{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;color:#000
+}
+.msg{
+  background:#161b22;padding:10px 14px;
+  border-radius:10px;width:100%;position:relative
+}
 .time{font-size:11px;color:#8b949e;margin-left:6px}
-.reply-btn{position:absolute;right:8px;top:8px;font-size:12px;color:#8b949e;cursor:pointer;opacity:0}
+.reply-btn{
+  position:absolute;right:8px;top:8px;
+  font-size:12px;color:#8b949e;
+  cursor:pointer;opacity:0
+}
 .msg:hover .reply-btn{opacity:1}
-.reply-preview{background:#0d1117;border-left:3px solid #58a6ff;padding:6px;font-size:12px;margin-bottom:6px}
+.reply-preview{
+  background:#0d1117;border-left:3px solid #58a6ff;
+  padding:6px;font-size:12px;margin-bottom:6px
+}
 
 /* input */
 #replyBox{display:none;background:#21262d;padding:8px 14px;font-size:12px;color:#fff}
 #replyBox span{color:#58a6ff}
-#inputBar{padding:14px;background:#161b22;border-top:1px solid #0d1117;display:flex;gap:8px;position:relative;align-items:center}
+#inputBar{
+  padding:14px;background:#161b22;
+  border-top:1px solid #0d1117;
+  display:flex;gap:8px;position:relative;align-items:center
+}
 #msg{flex:1;padding:12px;border-radius:8px;border:none;background:#0d1117;color:#fff}
 
 /* emoji */
-#emojiPicker{display:none;flex-wrap:wrap;gap:4px;padding:6px;background:#21262d;border-radius:8px;position:absolute;bottom:60px;left:14px;max-width:320px;max-height:200px;overflow-y:auto}
+#emojiPicker{
+  display:none;flex-wrap:wrap;gap:4px;
+  padding:6px;background:#21262d;
+  border-radius:8px;position:absolute;
+  bottom:60px;left:14px;
+  max-width:320px;max-height:200px;overflow-y:auto
+}
 #emojiPicker div{cursor:pointer;font-size:18px}
 #emojiBtn{border:none;background:#161b22;color:#fff;font-size:18px;cursor:pointer}
 
@@ -62,23 +108,17 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
 <body>
 <div id="app">
 
-<div id="login">
-  <input id="loginNick" placeholder="Username">
-  <input id="loginPass" type="password" placeholder="Password">
-  <button id="loginBtn">Login / Register</button>
-</div>
-
 <div id="home">
-  <div id="homeTop">
-    <div id="nickDisplay">
-      <span id="homeNick"></span>
-      <input type="color" id="nickColor" value="#58a6ff">
-    </div>
-    <button id="createRoom">Create / Join Room</button>
-  </div>
   <div id="homeLeft">
     <h2>Rooms</h2>
     <div id="roomList"></div>
+  </div>
+  <div id="homeCenter">
+    <div id="nickRow">
+      <input id="nick" placeholder="Username">
+      <input type="color" id="nickColor" value="#58a6ff">
+    </div>
+    <button id="createRoom">Create / Join Room</button>
   </div>
 </div>
 
@@ -109,9 +149,9 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, setDoc, collection, addDoc,
-  getDocs, query, orderBy, onSnapshot,
-  serverTimestamp, deleteDoc
+  getFirestore, doc, getDoc, setDoc, collection,
+  addDoc, getDocs, query, orderBy,
+  onSnapshot, serverTimestamp, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp({
@@ -121,118 +161,82 @@ const app = initializeApp({
 const db = getFirestore(app);
 
 /* DOM */
-const loginDiv = document.getElementById("login");
-const loginNick = document.getElementById("loginNick");
-const loginPass = document.getElementById("loginPass");
-const loginBtn = document.getElementById("loginBtn");
+const chat=document.getElementById("chat");
+const msg=document.getElementById("msg");
+const roomList=document.getElementById("roomList");
+const replyBox=document.getElementById("replyBox");
+const roomName=document.getElementById("roomName");
+const emojiPicker=document.getElementById("emojiPicker");
+const emojiBtn=document.getElementById("emojiBtn");
+const typingIndicator=document.getElementById("typingIndicator");
+const nickInput=document.getElementById("nick");
+const nickColorInput=document.getElementById("nickColor");
 
-const home = document.getElementById("home");
-const homeNick = document.getElementById("homeNick");
-const nickColorInput = document.getElementById("nickColor");
-const createRoomBtn = document.getElementById("createRoom");
-const roomList = document.getElementById("roomList");
-
-const main = document.getElementById("main");
-const roomName = document.getElementById("roomName");
-const chat = document.getElementById("chat");
-const msg = document.getElementById("msg");
-const replyBox = document.getElementById("replyBox");
-const emojiPicker = document.getElementById("emojiPicker");
-const emojiBtn = document.getElementById("emojiBtn");
-const typingIndicator = document.getElementById("typingIndicator");
-
-let nick="", nickColor="#58a6ff", room="", replyTo=null, lastMessageTime=0;
+let room="", nick="", nickColor="#58a6ff", replyTo=null;
+let lastMessageTime=0;
+let typingTimeout=null;
 
 /* notifications */
-if(Notification.permission!=="granted") Notification.requestPermission();
+if(Notification.permission!=="granted"){
+  Notification.requestPermission();
+}
 
-/* LOGIN */
-loginBtn.onclick = async ()=>{
-  try{
-    const n = loginNick.value.trim();
-    const p = loginPass.value.trim();
-    if(!n||!p) return alert("Enter username and password");
-
-    const safeNick = n.replace(/[^a-zA-Z0-9_-]/g,"_");
-    const uRef = doc(db,"users",safeNick);
-    const snap = await getDoc(uRef);
-
-    if(snap.exists()){
-      if(snap.data().pass!==p) return alert("Wrong password");
-      nickColor = snap.data().color || "#58a6ff";
-    } else {
-      await setDoc(uRef,{pass:p,color:"#58a6ff"});
-      nickColor="#58a6ff";
-    }
-
-    nick = n;
-    loginDiv.style.display="none";
-    home.style.display="flex";
-    homeNick.textContent = nick;
-    nickColorInput.value = nickColor;
-
-    loadRooms();
-
-  }catch(err){
-    alert("Login error");
-    console.error(err);
-  }
-};
-
-/* color change */
-nickColorInput.oninput = async ()=>{
-  nickColor = nickColorInput.value;
-  if(nick){
-    const safeNick = nick.replace(/[^a-zA-Z0-9_-]/g,"_");
-    await setDoc(doc(db,"users",safeNick),{color:nickColor},{merge:true});
-  }
-};
+/* nick */
+nickInput.value=localStorage.getItem("nick")||"";
+nickColorInput.value=localStorage.getItem("nickColor")||"#58a6ff";
+nickColorInput.oninput=()=>localStorage.setItem("nickColor",nickColorInput.value);
 
 /* rooms */
 async function loadRooms(){
   roomList.innerHTML="";
-  const s = await getDocs(collection(db,"rooms"));
+  const s=await getDocs(collection(db,"rooms"));
   s.forEach(r=>{
     const d=document.createElement("div");
     d.className="room";
     d.textContent="# "+r.id;
-    d.onclick=()=>joinRoomPrompt(r.id);
+    d.onclick=()=>joinRoom(r.id);
     roomList.appendChild(d);
   });
 }
 
-createRoomBtn.onclick=()=>{
-  const r=prompt("Room name");
-  if(r) joinRoomPrompt(r);
+/* create/join */
+createRoom.onclick=async()=>{
+  const r=prompt("Room name"); if(!r)return;
+  const p=prompt("Password (optional)");
+  const ref=doc(db,"rooms",r);
+  if(!(await getDoc(ref)).exists())
+    await setDoc(ref,{password:p||"",created:serverTimestamp()});
+  joinRoom(r);
 };
 
-async function joinRoomPrompt(r){
+async function joinRoom(r){
   const ref=doc(db,"rooms",r);
   const snap=await getDoc(ref);
-  if(snap.exists()){
-    if(prompt("Password")!==snap.data().password) return alert("Wrong password");
-  } else {
-    const p=prompt("Set password");
-    if(!p) return;
-    await setDoc(ref,{password:p,created:serverTimestamp()});
-  }
-  joinRoom(r);
-}
+  if(!snap.exists())return alert("Room doesn't exist");
+  const pass=prompt("Password");
+  if(pass!==snap.data().password)return alert("Wrong password");
 
-function joinRoom(r){
-  room=r;
+  nick=nickInput.value||("Anon"+Math.floor(Math.random()*1000));
+  nickColor=nickColorInput.value;
+  localStorage.setItem("nick",nick);
+  localStorage.setItem("nickColor",nickColor);
+
   home.style.display="none";
   main.style.display="flex";
+  room=r;
   roomName.textContent="# "+r;
 
+  /* messages */
   onSnapshot(query(collection(db,"rooms",room,"messages"),orderBy("time")),snap=>{
     chat.innerHTML="";
-    const now=Date.now();
     snap.forEach(d=>{
       const m=d.data();
       const t=m.time?.toMillis()||0;
-      if(t>lastMessageTime && document.hidden && m.name!==nick)
-        new Notification("New message");
+
+      if(t>lastMessageTime && document.hidden && m.name!==nick){
+        new Notification("New message.");
+        new Notification("# "+room,{body:`${m.name}: ${m.text}`});
+      }
       lastMessageTime=Math.max(lastMessageTime,t);
 
       const el=document.createElement("div");
@@ -251,31 +255,52 @@ function joinRoom(r){
     chat.scrollTop=chat.scrollHeight;
   });
 
+  /* typing listener */
   onSnapshot(collection(db,"rooms",room,"typing"),snap=>{
-    const users=[];
     const now=Date.now();
+    const users=[];
     snap.forEach(d=>{
-      if(d.id!==nick && now-d.data().t<2000) users.push(d.id);
+      if(d.id===nick) return;
+      if(d.data().t && now-d.data().t<2000){
+      const t=d.data().t?.toMillis?.() ?? d.data().t;
+      if(d.id!==nick && t && now-t<1500){
+        users.push(d.id);
+      }
     });
-    typingIndicator.textContent = users.length?users.join(", ")+" typing...":"";
+    typingIndicator.textContent =
+      users.length ? users.join(", ")+" typing..." : "";
   });
 }
 
-/* typing */
+/* typing write */
 msg.addEventListener("input",()=>{
   if(!room||!nick) return;
+
   if(msg.value.trim()===""){
     deleteDoc(doc(db,"rooms",room,"typing",nick));
     return;
   }
+
   setDoc(doc(db,"rooms",room,"typing",nick),{t:Date.now()});
-  setTimeout(()=>deleteDoc(doc(db,"rooms",room,"typing",nick)),2000);
+  setDoc(doc(db,"rooms",room,"typing",nick),{
+    t: serverTimestamp()
+  });
+
+  clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(()=>{
+    deleteDoc(doc(db,"rooms",room,"typing",nick));
+  },2000);
+  },1500);
+});
+
+msg.addEventListener("blur",()=>{
+  if(room&&nick) deleteDoc(doc(db,"rooms",room,"typing",nick));
 });
 
 /* reply */
 chat.onclick=e=>{
   const b=e.target.closest(".reply-btn");
-  if(!b) return;
+  if(!b)return;
   replyTo={name:b.dataset.name,text:b.dataset.text};
   replyBox.style.display="block";
   replyBox.innerHTML=`Replying to <span>${replyTo.name}</span>
@@ -288,20 +313,23 @@ window.cancelReply=()=>{
 
 /* send */
 msg.addEventListener("keydown",async e=>{
-  if(e.key!=="Enter") return;
+  if(e.key!=="Enter")return;
   const text=msg.value.trim();
   msg.value="";
-  if(!text) return;
+  if(!text)return;
+
+  deleteDoc(doc(db,"rooms",room,"typing",nick));
 
   if(text==="/clear"){
     const msgs=await getDocs(collection(db,"rooms",room,"messages"));
-    for(const d of msgs.docs) await deleteDoc(d.ref);
+    for(const d of msgs.docs)await deleteDoc(d.ref);
     return;
   }
+
   if(text==="/delete"){
-    if(!confirm("Delete entire room?")) return;
+    if(!confirm("Delete entire room?"))return;
     const msgs=await getDocs(collection(db,"rooms",room,"messages"));
-    for(const d of msgs.docs) await deleteDoc(d.ref);
+    for(const d of msgs.docs)await deleteDoc(d.ref);
     await deleteDoc(doc(db,"rooms",room));
     location.reload();
     return;
@@ -310,22 +338,35 @@ msg.addEventListener("keydown",async e=>{
   await addDoc(collection(db,"rooms",room,"messages"),{
     name:nick,text,reply:replyTo,color:nickColor,time:serverTimestamp()
   });
+
   replyTo=null;
   replyBox.style.display="none";
 });
 
-/* emoji */
-["😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😍","🥰","😘","😜","🤪"]
-.forEach(e=>{
+/* emojis */
+[
+  "😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
+  "😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
+  "🤗","🤭","🤫","🤔","🤨","😐","😑","😶","🙄","😏",
+  "😣","😥","😮","😯","😲","😪","😫","🥱","😴","😌",
+  "😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓",
+  "👍","👎","👌","🤌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏",
+  "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","💕","💞","💓","💗","💖",
+  "🔥","💯","✨","⭐","🌟","⚡","🎉","🎊","🎈","🎶","🎵",
+  "😎","🤓","🧐","👀","🧠","🤡","👻","👽","🤖","💀","💩","🫶"
+].forEach(e=>{
   const d=document.createElement("div");
   d.textContent=e;
   d.onclick=()=>msg.value+=e;
   emojiPicker.appendChild(d);
 });
+
 emojiBtn.onclick=()=>emojiPicker.style.display=
   emojiPicker.style.display==="flex"?"none":"flex";
+msg.onfocus=()=>emojiPicker.style.display="none";
 
-document.getElementById("back").onclick=()=>location.reload();
+back.onclick=()=>location.reload();
+loadRooms();
 </script>
 </body>
 </html>
