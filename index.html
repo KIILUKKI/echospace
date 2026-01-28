@@ -30,7 +30,15 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
 }
 #nickRow{display:flex;gap:12px;width:320px;margin-bottom:20px}
 #nick{flex:1;padding:12px;border-radius:10px;border:none;background:#21262d;color:#fff}
-#nickColor{width:42px;height:42px;border-radius:50%;border:none}
+
+/* ⬇️ MUUTETTU: neliön muotoinen color picker */
+#nickColor{
+  width:42px;
+  height:42px;
+  border-radius:0;
+  border:none
+}
+
 #createRoom{
   padding:14px 28px;border-radius:12px;
   background:#58a6ff;color:#000;
@@ -225,18 +233,13 @@ async function joinRoom(r){
   room=r;
   roomName.textContent="# "+r;
 
-  /* messages */
   onSnapshot(query(collection(db,"rooms",room,"messages"),orderBy("time")),snap=>{
     chat.innerHTML="";
     snap.forEach(d=>{
       const m=d.data();
       const t=m.time?.toMillis()||0;
 
-      if(
-        t>lastMessageTime &&
-        document.hidden &&
-        m.name!==nick
-      ){
+      if(t>lastMessageTime && document.hidden && m.name!==nick){
         new Notification("New message.");
       }
       lastMessageTime=Math.max(lastMessageTime,t);
@@ -257,14 +260,10 @@ async function joinRoom(r){
     chat.scrollTop=chat.scrollHeight;
   });
 
-  /* typing listener */
   onSnapshot(collection(db,"rooms",room,"typing"),s=>{
     const users=[];
-    s.forEach(d=>{
-      if(d.id!==nick) users.push(d.id);
-    });
-    typingIndicator.textContent=
-      users.length ? users.join(", ")+" typing..." : "";
+    s.forEach(d=>{ if(d.id!==nick) users.push(d.id); });
+    typingIndicator.textContent=users.length ? users.join(", ")+" typing..." : "";
   });
 }
 
@@ -343,4 +342,4 @@ back.onclick=()=>location.reload();
 loadRooms();
 </script>
 </body>
-</html>s
+</html>
