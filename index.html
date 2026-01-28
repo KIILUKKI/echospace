@@ -226,7 +226,6 @@ async function joinRoom(r){
   room=r;
   roomName.textContent="# "+r;
 
-  /* messages */
   onSnapshot(query(collection(db,"rooms",room,"messages"),orderBy("time")),snap=>{
     chat.innerHTML="";
     snap.forEach(d=>{
@@ -234,7 +233,7 @@ async function joinRoom(r){
       const t=m.time?.toMillis()||0;
 
       if(t>lastMessageTime && document.hidden && m.name!==nick){
-        new Notification("New message.");
+        new Notification("# "+room,{body:`${m.name}: ${m.text}`});
       }
       lastMessageTime=Math.max(lastMessageTime,t);
 
@@ -254,13 +253,12 @@ async function joinRoom(r){
     chat.scrollTop=chat.scrollHeight;
   });
 
-  /* typing listener */
   onSnapshot(collection(db,"rooms",room,"typing"),snap=>{
     const now=Date.now();
     const users=[];
     snap.forEach(d=>{
-      if(d.id===nick) return;
-      if(d.data().t && now-d.data().t<2000){
+      const t=d.data().t?.toMillis?.() ?? d.data().t;
+      if(d.id!==nick && t && now-t<1500){
         users.push(d.id);
       }
     });
@@ -278,12 +276,14 @@ msg.addEventListener("input",()=>{
     return;
   }
 
-  setDoc(doc(db,"rooms",room,"typing",nick),{t:Date.now()});
+  setDoc(doc(db,"rooms",room,"typing",nick),{
+    t: serverTimestamp()
+  });
 
   clearTimeout(typingTimeout);
   typingTimeout=setTimeout(()=>{
     deleteDoc(doc(db,"rooms",room,"typing",nick));
-  },2000);
+  },1500);
 });
 
 msg.addEventListener("blur",()=>{
