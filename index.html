@@ -29,7 +29,11 @@ border:none;font-weight:600;cursor:pointer
 }
 
 /* HOME */
-#home{position:absolute;inset:0;display:none;background:#0b0f14;display:flex}
+#home{
+position:absolute;inset:0;
+display:none;               /* ← KORJATTU */
+background:#0b0f14;
+}
 #homeLeft{
 width:260px;height:100%;
 background:#161b22;padding:14px;
@@ -55,9 +59,13 @@ border:none;font-weight:600;cursor:pointer
 }
 
 /* MAIN */
-#main{display:none;height:100%;flex-direction:column}
+#main{
+display:none;
+height:100%;
+flex-direction:column;
+}
 
-/* CHAT WRAPPER */
+/* CHAT */
 #chatWrapper{flex:1;display:flex;overflow:hidden}
 #chatSidebar{
 width:260px;background:#161b22;
@@ -80,7 +88,8 @@ font-size:18px;cursor:pointer;margin-right:10px
 #chat{
 flex:1;padding:16px;
 overflow-y:auto;
-display:flex;flex-direction:column;
+display:flex;
+flex-direction:column;
 gap:10px
 }
 .message{display:flex;gap:10px}
@@ -91,49 +100,18 @@ font-weight:600;color:#000
 }
 .msg{
 background:#161b22;padding:10px 14px;
-border-radius:10px;width:100%;position:relative
-}
-.time{font-size:11px;color:#8b949e;margin-left:6px}
-.reply-btn{
-position:absolute;right:8px;top:8px;
-font-size:12px;color:#8b949e;
-cursor:pointer;opacity:0
-}
-.msg:hover .reply-btn{opacity:1}
-.reply-preview{
-background:#0d1117;border-left:3px solid #58a6ff;
-padding:6px;font-size:12px;margin-bottom:6px
+border-radius:10px;width:100%
 }
 
 /* INPUT */
-#replyBox{display:none;background:#21262d;padding:8px 14px;font-size:12px;color:#fff}
-#replyBox span{color:#58a6ff}
 #inputBar{
 padding:14px;background:#161b22;
 border-top:1px solid #0d1117;
-display:flex;gap:8px;position:relative;align-items:center
+display:flex;gap:8px
 }
 #msg{
 flex:1;padding:12px;border-radius:8px;
 border:none;background:#0d1117;color:#fff
-}
-
-/* EMOJI */
-#emojiPicker{
-display:none;flex-wrap:wrap;gap:4px;
-padding:6px;background:#21262d;
-border-radius:8px;position:absolute;
-bottom:60px;left:14px;
-max-width:320px;max-height:200px;overflow-y:auto
-}
-#emojiPicker div{cursor:pointer;font-size:18px}
-#emojiBtn{
-border:none;background:#161b22;color:#fff;
-font-size:18px;cursor:pointer
-}
-
-#typingIndicator{
-font-size:12px;color:#8b949e;margin-left:16px
 }
 </style>
 </head>
@@ -141,7 +119,6 @@ font-size:12px;color:#8b949e;margin-left:16px
 <body>
 <div id="app">
 
-<!-- LOGIN -->
 <div id="login">
 <h2>Login</h2>
 <input id="loginNick" placeholder="Username">
@@ -149,7 +126,6 @@ font-size:12px;color:#8b949e;margin-left:16px
 <button id="loginBtn">Login / Register</button>
 </div>
 
-<!-- HOME -->
 <div id="home">
 <div id="homeLeft">
 <h2>Rooms</h2>
@@ -164,7 +140,6 @@ font-size:12px;color:#8b949e;margin-left:16px
 </div>
 </div>
 
-<!-- MAIN -->
 <div id="main">
 <div id="header">
 <button id="back">←</button>
@@ -175,67 +150,57 @@ font-size:12px;color:#8b949e;margin-left:16px
 <div id="chatSidebar"></div>
 <div id="chatWrapperMain">
 <div id="chat"></div>
-<div id="typingIndicator"></div>
 </div>
 </div>
 
-<div id="replyBox"></div>
 <div id="inputBar">
-<button id="emojiBtn">😊</button>
 <input id="msg" placeholder="Message...">
-<div id="emojiPicker"></div>
 </div>
 </div>
 
 </div>
 
 <script>
-/* ====== SIMPLE LOCAL MINI CHAT ====== */
-
 const login = document.getElementById("login");
 const home = document.getElementById("home");
 const main = document.getElementById("main");
 
 const loginBtn = document.getElementById("loginBtn");
 const loginNick = document.getElementById("loginNick");
-const loginPass = document.getElementById("loginPass");
 
 const roomList = document.getElementById("roomList");
 const createRoomBtn = document.getElementById("createRoom");
-const nickInput = document.getElementById("nick");
-const nickColor = document.getElementById("nickColor");
 
 const chat = document.getElementById("chat");
 const msgInput = document.getElementById("msg");
 const roomNameEl = document.getElementById("roomName");
 const backBtn = document.getElementById("back");
 
-let currentRoom = null;
-let user = null;
+let user = "";
+let currentRoom = "";
 
-/* STORAGE */
-const getRooms = () => JSON.parse(localStorage.getItem("rooms") || "[]");
-const saveRooms = r => localStorage.setItem("rooms", JSON.stringify(r));
+const getRooms = () =>
+  JSON.parse(localStorage.getItem("rooms") || "[]");
 
-/* LOGIN */
+const saveRooms = r =>
+  localStorage.setItem("rooms", JSON.stringify(r));
+
 loginBtn.onclick = () => {
-  if (!loginNick.value) return;
-  user = loginNick.value;
-  nickInput.value = user;
+  if (!loginNick.value.trim()) return;
+  user = loginNick.value.trim();
   login.style.display = "none";
-  home.style.display = "flex";
+  home.style.display = "flex";      /* ← VARMA */
   renderRooms();
 };
 
-/* ROOMS */
 function renderRooms() {
   roomList.innerHTML = "";
-  getRooms().forEach(r => {
-    const d = document.createElement("div");
-    d.className = "room";
-    d.textContent = r;
-    d.onclick = () => enterRoom(r);
-    roomList.appendChild(d);
+  getRooms().forEach(room => {
+    const div = document.createElement("div");
+    div.className = "room";
+    div.textContent = room;
+    div.onclick = () => enterRoom(room);
+    roomList.appendChild(div);
   });
 }
 
@@ -250,12 +215,11 @@ createRoomBtn.onclick = () => {
   renderRooms();
 };
 
-/* CHAT */
-function enterRoom(r) {
-  currentRoom = r;
-  roomNameEl.textContent = r;
+function enterRoom(room) {
+  currentRoom = room;
+  roomNameEl.textContent = room;
   home.style.display = "none";
-  main.style.display = "flex";
+  main.style.display = "flex";      /* ← TÄRKEÄ */
   loadMessages();
 }
 
@@ -266,63 +230,26 @@ backBtn.onclick = () => {
 
 function loadMessages() {
   chat.innerHTML = "";
-  const msgs = JSON.parse(localStorage.getItem("chat_"+currentRoom) || "[]");
-  msgs.forEach(addMessage);
+  const msgs = JSON.parse(
+    localStorage.getItem("chat_" + currentRoom) || "[]"
+  );
+  msgs.forEach(m => {
+    const div = document.createElement("div");
+    div.textContent = m.user + ": " + m.text;
+    chat.appendChild(div);
+  });
 }
 
-function addMessage(m) {
-  const wrap = document.createElement("div");
-  wrap.className = "message";
-
-  const av = document.createElement("div");
-  av.className = "avatar";
-  av.style.background = m.color;
-  av.textContent = m.user[0].toUpperCase();
-
-  const box = document.createElement("div");
-  box.className = "msg";
-  box.innerHTML = `<b>${m.user}</b>
-    <span class="time">${m.time}</span><br>${m.text}`;
-
-  wrap.append(av, box);
-  chat.appendChild(wrap);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-/* SEND */
 msgInput.addEventListener("keydown", e => {
   if (e.key === "Enter" && msgInput.value.trim()) {
-    const m = {
-      user,
-      text: msgInput.value,
-      color: nickColor.value,
-      time: new Date().toLocaleTimeString().slice(0,5)
-    };
-    const key = "chat_"+currentRoom;
+    const key = "chat_" + currentRoom;
     const msgs = JSON.parse(localStorage.getItem(key) || "[]");
-    msgs.push(m);
+    msgs.push({ user, text: msgInput.value });
     localStorage.setItem(key, JSON.stringify(msgs));
-    addMessage(m);
     msgInput.value = "";
+    loadMessages();
   }
 });
-
-/* EMOJI */
-const emojis = ["😀","😂","😍","😎","😭","👍","🔥","❤️","🎉"];
-const emojiPicker = document.getElementById("emojiPicker");
-const emojiBtn = document.getElementById("emojiBtn");
-
-emojis.forEach(e=>{
-  const d=document.createElement("div");
-  d.textContent=e;
-  d.onclick=()=>{msgInput.value+=e;emojiPicker.style.display="none"};
-  emojiPicker.appendChild(d);
-});
-
-emojiBtn.onclick = () => {
-  emojiPicker.style.display =
-    emojiPicker.style.display === "flex" ? "none" : "flex";
-};
 </script>
 </body>
 </html>
