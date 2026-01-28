@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>MiniChat — Smooth mobile drawer</title>
+<title>MiniChat — Smooth mobile drawer + mobile reply</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -87,6 +87,10 @@
   .mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
   #openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 
+  /* mobile persistent reply button (always visible on mobile) */
+  #mobileReplyBtn{display:none;position:fixed;right:12px;bottom:92px;z-index:72;background:var(--accent);color:#000;border:none;padding:12px 14px;border-radius:999px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,0.35);cursor:pointer}
+  #mobileReplyBtn.small{padding:10px;border-radius:10px}
+
 /* collapsed small labels */
   .collapsed .label-text{display:none}
   .collapsed .room{padding:8px;border-radius:8px;text-align:center}
@@ -99,6 +103,8 @@
     #chatSidebar{display:none}
     #header{padding:10px}
     #nickRow{max-width:100%}
+    /* show mobile reply button always on mobile */
+    #mobileReplyBtn{display:block}
   }
 
   .fade{transition:opacity 180ms ease,transform 180ms ease}
@@ -194,6 +200,8 @@
 
   <!-- Blue three-line button (mobile) -->
   <button id="openLobbyBtn" title="Avaa lobby">☰</button>
+  <!-- Mobile persistent reply button -->
+  <button id="mobileReplyBtn" title="Vastaa viestiin">↩</button>
 
 </div>
 
@@ -201,8 +209,7 @@
 /* ===================
    App logic: drawer open/close smooth when tapping room (mobile),
    both-direction smooth animations, keyboard handling, desktop unchanged.
-   Fixed touchstart/drag logic so a tap on a room in the drawer doesn't
-   immediately trigger a drag/close and block joinRoom.
+   Added: mobile persistent reply button that is always visible on mobile.
    =================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -249,6 +256,7 @@ const openLobbyBtn = document.getElementById('openLobbyBtn');
 const mobileOverlay = document.getElementById('mobileOverlay');
 const mobileDrawer = document.getElementById('mobileDrawer');
 const closeDrawer = document.getElementById('closeDrawer');
+const mobileReplyBtn = document.getElementById('mobileReplyBtn');
 
 const chat = document.getElementById('chat');
 const chatWrapperMain = document.getElementById('chatWrapperMain');
@@ -304,6 +312,7 @@ function showHome(){
   home.style.display = 'flex';
   main.style.display = 'none';
   updateOpenLobbyBtnVisibility();
+  updateMobileReplyButton();
 }
 function showLogin(){
   login.style.display = 'flex';
@@ -311,12 +320,14 @@ function showLogin(){
   main.style.display = 'none';
   localStorage.removeItem('session');
   updateOpenLobbyBtnVisibility();
+  updateMobileReplyButton();
 }
 function showMain(){
   login.style.display = 'none';
   home.style.display = 'none';
   main.style.display = 'flex';
   updateOpenLobbyBtnVisibility();
+  updateMobileReplyButton();
 }
 
 /* restore session */
@@ -494,8 +505,9 @@ chat.addEventListener('click', (e)=>{
   replyBox.style.display = 'block';
   replyBox.innerHTML = `Vastataan <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
   document.getElementById('cancelReply').onclick = cancelReply;
+  updateMobileReplyButton();
 });
-function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; }
+function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; updateMobileReplyButton(); }
 
 /* send messages */
 msg.addEventListener('keydown', async (e)=>{
@@ -522,6 +534,7 @@ msg.addEventListener('keydown', async (e)=>{
     name: nick, text, reply: replyTo, color: nickColorInput.value, time: serverTimestamp()
   }).catch(console.error);
   replyTo = null; replyBox.style.display = 'none';
+  updateMobileReplyButton();
 });
 
 /* emojis */
@@ -542,6 +555,42 @@ emojiList.forEach(e=>{
   emojiPicker.appendChild(d);
 });
 emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
+
+/* mobile reply button behaviour */
+function updateMobileReplyButton(){
+  // Always show the button for mobile devices; hide on desktop
+  if(!isMobile){
+    mobileReplyBtn.style.display = 'none';
+    return;
+  }
+  // Ensure button is visible (CSS also shows it on small screens)
+  mobileReplyBtn.style.display = 'block';
+  if(replyTo){
+    // show who is being replied to (truncate)
+    const name = replyTo.name || '';
+    const short = name.length > 12 ? name.slice(0,12) + '…' : name;
+    mobileReplyBtn.textContent = 'Vastataan ' + short;
+    mobileReplyBtn.title = (replyTo.text || '').slice(0,120);
+    mobileReplyBtn.classList.remove('small');
+  } else {
+    mobileReplyBtn.textContent = '↩';
+    mobileReplyBtn.title = 'Vastaa viestiin';
+    mobileReplyBtn.classList.add('small');
+  }
+}
+
+// When clicking the mobile reply button: if we have an active reply, focus input to continue; otherwise focus input.
+mobileReplyBtn.addEventListener('click', ()=>{
+  // toggle focus to the input so user can type quickly
+  msg.focus();
+  // if there is a reply active, keep it (the reply preview is shown in replyBox already)
+  if(replyTo){
+    // scroll to input area if needed
+    msg.scrollIntoView({behavior:'smooth', block:'center'});
+  } else {
+    // no reply — do nothing besides focusing
+  }
+});
 
 /* back button */
 back.onclick = ()=> {
@@ -818,7 +867,7 @@ onSnapshot(collection(db,'rooms'), snap => {
 /* utility helpers */
 function escapeHtml(s){
   if(!s && s !== 0) return '';
-  return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
+  return String(s).replace(/[&<>\"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]); });
 }
 function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
 function scrollChatToBottom(instant = true){
@@ -844,6 +893,9 @@ if(isMobile){
 document.addEventListener('visibilitychange', ()=> {
   if(!document.hidden) lastMessageTime = Date.now();
 });
+
+// Initialize mobile reply button initial state
+updateMobileReplyButton();
 
 </script>
 </body>
