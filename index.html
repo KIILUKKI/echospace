@@ -52,9 +52,14 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
   flex:1;display:flex;flex-direction:column;
   justify-content:center;align-items:center;position:relative;
 }
-#nickRow{display:flex;gap:12px;width:320px;margin-bottom:20px}
+#nickRow{display:flex;gap:12px;width:320px;margin-bottom:20px;align-items:center}
 #nick{flex:1;padding:12px;border-radius:10px;border:none;background:#21262d;color:#fff}
-#nickColor{width:42px;height:42px;border-radius:50%;border:none}
+#nickColor{
+  width:42px;height:42px;border-radius:50%;
+  border:none;
+  cursor:pointer;
+  padding:0;
+}
 #createRoom{
   padding:14px 28px;border-radius:12px;
   background:#58a6ff;color:#000;
@@ -180,7 +185,7 @@ body{margin:0;height:100vh;font-family:Inter,sans-serif;background:#0b0f14;color
 </div>
 
 <script type="module">
-/* === LOGIN SCRIPT === */
+// === LOGIN SCRIPT ===
 const login=document.getElementById("login");
 const home=document.getElementById("home");
 const loginBtn=document.getElementById("loginBtn");
@@ -220,7 +225,7 @@ loginBtn.onclick=()=>{
 logoutBtn.onclick=()=>showLogin();
 </script>
 
-<!-- === ORIGINAL SCRIPT CONTINUES === -->
+<!-- === FIREBASE SCRIPT === -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -235,7 +240,6 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 
-/* DOM */
 const chat=document.getElementById("chat");
 const msg=document.getElementById("msg");
 const roomList=document.getElementById("roomList");
@@ -254,10 +258,8 @@ let room="", nick="", nickColor="#58a6ff", replyTo=null;
 let lastMessageTime=0;
 let typingTimeout=null;
 
-/* notifications */
 if(Notification.permission!=="granted") Notification.requestPermission();
 
-/* nick */
 nickInput.value=localStorage.getItem("nick")||"";
 nickColorInput.value=localStorage.getItem("nickColor")||"#58a6ff";
 nickColorInput.oninput=()=>localStorage.setItem("nickColor",nickColorInput.value);
