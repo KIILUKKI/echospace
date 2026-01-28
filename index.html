@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>MiniChat — Mobile-friendly (fast swipe)</title>
+<title>MiniChat — Smooth mobile drawer</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -14,7 +14,7 @@
     --card:#21262d;
     --text:#e6edf3;
     --lobby-width:260px;
-    --drawer-duration: 140ms;
+    --drawer-duration: 200ms; /* smooth, brisk but not too fast */
     --drawer-ease: cubic-bezier(.16,.84,.24,1);
   }
   *{box-sizing:border-box}
@@ -143,7 +143,7 @@
       </div>
       <button id="createRoom">Luo / Liity huoneeseen</button>
       <div style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center;max-width:420px">
-        Pyyhkäise reunasta avataksesi huonevalikon mobiilissa (nopea ja smooth).
+        Pyyhkäise reunasta avataksesi huonevalikon mobiilissa. Nyt sulkeutuminen avautuessa ja painettaessa on smooth.
       </div>
     </main>
   </div>
@@ -199,11 +199,8 @@
 
 <script type="module">
 /* ===================
-   App logic (single module)
-   - Very short, super-smooth & fast swipe for mobile drawer
-   - Velocity-based flick decision (makes swipe feel snappy)
-   - Keyboard handling via visualViewport
-   - Desktop unchanged
+   App logic: drawer open/close smooth when tapping room (mobile),
+   both-direction smooth animations, keyboard handling, desktop unchanged.
    =================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -275,7 +272,7 @@ let typingUnsub = null;
 const isTouch = matchMedia('(pointer:coarse)').matches;
 const isMobile = /Mobi|Android|iPhone|iPad|Windows Phone/.test(navigator.userAgent) || isTouch;
 
-/* Initial UI */
+/* UI init */
 nickColorInput.value = nickColor;
 nickColorCircle.style.background = nickColor;
 nickInput.value = localStorage.getItem('nick') || '';
@@ -285,8 +282,7 @@ if("Notification" in window && Notification.permission !== 'granted'){
   Notification.requestPermission().catch(()=>{});
 }
 
-/* Ensure desktop lobby visible and cannot be collapsed:
-   If not mobile, force visible and hide collapse controls. */
+/* Ensure desktop lobby visible and cannot be collapsed */
 function enforceDesktopLobby(){
   if(!isMobile){
     lobby.style.display = 'block';
@@ -300,7 +296,7 @@ function enforceDesktopLobby(){
 }
 enforceDesktopLobby();
 
-/* Session UI */
+/* Session helpers */
 function showHome(){
   login.style.display = 'none';
   home.style.display = 'flex';
@@ -322,13 +318,10 @@ function showMain(){
 }
 
 /* restore session */
-if(localStorage.getItem('session')){
-  showHome();
-} else {
-  showLogin();
-}
+if(localStorage.getItem('session')) showHome();
+else showLogin();
 
-/* login handlers */
+/* login */
 loginBtn.onclick = () => {
   const u = loginUser.value.trim();
   const p = loginPass.value;
@@ -350,23 +343,21 @@ demoBtn.onclick = () => {
 };
 logoutBtn.onclick = ()=> { showLogin(); };
 
-/* nick color UI */
+/* nick color */
 nickColorCircle.addEventListener('click', ()=> nickColorInput.click());
 nickColorInput.addEventListener('input', ()=>{
   nickColorCircle.style.background = nickColorInput.value;
   localStorage.setItem('nickColor', nickColorInput.value);
 });
 
-/* rooms */
+/* rooms load/render */
 async function loadRooms(){
   roomList.innerHTML = '';
   roomListSidebar.innerHTML = '';
   roomListMobile.innerHTML = '';
   try{
     const s = await getDocs(collection(db,'rooms'));
-    s.forEach(r => {
-      renderRoomEntry(r.id);
-    });
+    s.forEach(r => renderRoomEntry(r.id));
   }catch(e){ console.error('loadRooms error', e); }
 }
 function renderRoomEntry(id){
@@ -382,18 +373,17 @@ function renderRoomEntry(id){
   createEl(roomListMobile);
 }
 
-/* create/join */
+/* create/join handlers */
 createRoomBtn.onclick = async ()=>{
   const r = prompt('Huoneen nimi'); if(!r) return;
   const p = prompt('Salasana (valinnainen)');
   const ref = doc(db,'rooms',r);
   const snap = await getDoc(ref);
-  if(!snap.exists()){
-    await setDoc(ref,{password:p||'',created:serverTimestamp()});
-  }
+  if(!snap.exists()) await setDoc(ref,{password:p||'',created:serverTimestamp()});
   joinRoom(r);
 };
 
+/* joinRoom handles mobile drawer smooth close when applicable, then calls enterRoom */
 async function joinRoom(r){
   const ref = doc(db,'rooms',r);
   const snap = await getDoc(ref);
@@ -401,19 +391,46 @@ async function joinRoom(r){
   const pass = prompt('Salasana');
   if(pass !== snap.data().password) return alert('Väärä salasana');
 
+  // Save nick/color
   nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000));
   nickColor = nickColorInput.value;
   localStorage.setItem('nick', nick);
   localStorage.setItem('nickColor', nickColor);
 
+  // If mobile & drawer open -> animate drawer close smoothly, THEN enter room
+  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
+  const drawerOpen = mobileDrawer.classList.contains('show');
+  if(isMobile && drawerOpen){
+    // start closing animation (remove show to trigger CSS transition)
+    mobileDrawer.classList.remove('show');
+    mobileOverlay.classList.remove('show');
+    // after animation ends, hide elements and enter room
+    setTimeout(()=> {
+      mobileOverlay.style.display = 'none';
+      mobileDrawer.style.display = 'none';
+      // now actually enter room (subscribe, showMain)
+      enterRoom(r);
+      updateOpenLobbyBtnVisibility();
+    }, durationMs + 20);
+  } else {
+    // no mobile drawer open -> just enter room immediately
+    enterRoom(r);
+  }
+}
+
+/* enterRoom performs the actual subscription and view switch */
+async function enterRoom(r){
+  // show main immediately
   showMain();
   room = r;
   roomName.textContent = '# ' + r;
   chat.innerHTML = '';
 
+  // cleanup previous listeners
   if(messagesUnsub) messagesUnsub();
   if(typingUnsub) typingUnsub();
 
+  // messages snapshot
   const msgsQuery = query(collection(db,'rooms',room,'messages'), orderBy('time'));
   messagesUnsub = onSnapshot(msgsQuery, snap => {
     chat.innerHTML = '';
@@ -442,6 +459,7 @@ async function joinRoom(r){
     scrollChatToBottom();
   });
 
+  // typing snapshot
   typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap => {
     const now = Date.now();
     const users = [];
@@ -451,12 +469,9 @@ async function joinRoom(r){
     });
     typingIndicator.textContent = users.length ? users.join(', ') + ' kirjoittaa...' : '';
   });
-
-  // sulje drawer jos auki
-  closeMobileDrawer();
 }
 
-/* typing */
+/* typing indicator management */
 msg.addEventListener('input', ()=>{
   if(!room || !nick) return;
   if(msg.value.trim()===''){
@@ -469,7 +484,7 @@ msg.addEventListener('input', ()=>{
 });
 msg.addEventListener('blur', ()=> { if(room && nick) deleteDoc(doc(db,'rooms',room,'typing',nick)).catch(()=>{}); });
 
-/* reply */
+/* reply UI */
 chat.addEventListener('click', (e)=>{
   const b = e.target.closest('.reply-btn');
   if(!b) return;
@@ -480,7 +495,7 @@ chat.addEventListener('click', (e)=>{
 });
 function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; }
 
-/* send */
+/* send messages */
 msg.addEventListener('keydown', async (e)=>{
   if(e.key !== 'Enter') return;
   const text = msg.value.trim(); msg.value = ''; if(!text) return;
@@ -526,7 +541,7 @@ emojiList.forEach(e=>{
 });
 emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
 
-/* back */
+/* back button */
 back.onclick = ()=> {
   if(messagesUnsub) messagesUnsub();
   if(typingUnsub) typingUnsub();
@@ -535,7 +550,7 @@ back.onclick = ()=> {
   chat.innerHTML = '';
 };
 
-/* lobby size (feature kept) */
+/* lobby size (kept) */
 const LOBBY_SIZES = [
   {name:'small', width:'120px'},
   {name:'normal', width:'260px'},
@@ -563,13 +578,8 @@ function applyLobbySize(){
   }
 }
 
-/* Mobile drawer open/close with very short, snappy animation + velocity flick */
-openLobbyBtn.addEventListener('click', openMobileDrawer);
-mobileOverlay.addEventListener('click', closeMobileDrawer);
-closeDrawer.addEventListener('click', closeMobileDrawer);
-
+/* Mobile drawer open/close smooth functions */
 function openMobileDrawer(){
-  // use fast CSS transition
   mobileOverlay.classList.add('show');
   mobileDrawer.classList.add('show');
   mobileOverlay.style.display = 'block';
@@ -578,9 +588,10 @@ function openMobileDrawer(){
   updateOpenLobbyBtnVisibility();
 }
 function closeMobileDrawer(){
-  mobileOverlay.classList.remove('show');
+  // standard smooth close triggered by removing 'show'
   mobileDrawer.classList.remove('show');
-  // allow CSS to finish then hide
+  mobileOverlay.classList.remove('show');
+  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
   setTimeout(()=>{
     if(!mobileDrawer.classList.contains('show')){
       mobileOverlay.style.display = 'none';
@@ -588,24 +599,19 @@ function closeMobileDrawer(){
       mobileOverlay.setAttribute('aria-hidden','true'); mobileDrawer.setAttribute('aria-hidden','true');
       updateOpenLobbyBtnVisibility();
     }
-  }, 180); // slightly above the CSS duration for safety
+  }, durationMs + 20);
 }
 
-/* Visibility logic for the blue button */
+/* Visibility logic for blue button (mobile) */
 function updateOpenLobbyBtnVisibility(){
   const drawerOpen = mobileDrawer.classList.contains('show') || mobileOverlay.classList.contains('show');
   if(!isMobile){
-    openLobbyBtn.style.display = 'none';
-    return;
+    openLobbyBtn.style.display = 'none'; return;
   }
   const isHomeVisible = home.style.display !== 'none';
-  if(isHomeVisible && !drawerOpen){
-    openLobbyBtn.style.display = 'block';
-  } else {
-    openLobbyBtn.style.display = 'none';
-  }
+  if(isHomeVisible && !drawerOpen) openLobbyBtn.style.display = 'block';
+  else openLobbyBtn.style.display = 'none';
 }
-/* override show* functions to update button visibility */
 const origShowHome = showHome;
 showHome = function(){ origShowHome(); updateOpenLobbyBtnVisibility(); };
 const origShowMain = showMain;
@@ -613,20 +619,16 @@ showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
 const origShowLogin = showLogin;
 showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
 
-/* --- Tight & smooth swipe/drag implementation ---
-   - very short threshold (30px)
-   - velocity-based flick for snappy feel
-   - requestAnimationFrame-driven transform while dragging for max smoothness
-*/
+/* Fast drag + velocity-based flick (kept from previous) */
 let dragging = false;
 let startX = 0;
 let lastX = 0;
 let lastT = 0;
-let vx = 0; // velocity px/ms
+let vx = 0;
 let drawerWidth = 0;
-const EDGE_ZONE = 36; // allow starting swipe from very edge
-const SHORT_THRESHOLD = 30; // very short requirement
-const VELOCITY_THRESHOLD = 0.35; // px/ms (fast flick detection)
+const EDGE_ZONE = 36;
+const SHORT_THRESHOLD = 30;
+const VELOCITY_THRESHOLD = 0.35;
 
 function beginDrag(x, initiallyOpen){
   dragging = true;
@@ -634,55 +636,34 @@ function beginDrag(x, initiallyOpen){
   lastX = x;
   lastT = performance.now();
   drawerWidth = mobileDrawer.getBoundingClientRect().width || (window.innerWidth * 0.8);
-  // if currently open, initial translate is 0; if closed, start at -drawerWidth
   mobileDrawer.style.transition = 'none';
   mobileOverlay.style.transition = 'none';
-  // ensure elements visible during drag
   if(!mobileOverlay.classList.contains('show')) mobileOverlay.style.display = 'block';
   if(!mobileDrawer.classList.contains('show')) mobileDrawer.style.display = 'block';
-  // temporarily remove CSS "show" so inline transforms control position
   mobileDrawer.classList.remove('show');
 }
-
 function dragMove(x){
   if(!dragging) return;
   const dx = x - startX;
-  // If drawer closed initially, dx positive opens; if drawer open initially, dx negative closes.
-  // We'll compute a translate value clamped between -drawerWidth .. 0
-  // Determine current base: we check if drawer currently shown (class)
   const wasOpen = mobileDrawer.classList.contains('show');
   let translate;
-  if(wasOpen){
-    // initial base 0, user drags left to close -> dx negative
-    translate = Math.min(0, dx);
-  } else {
-    // initial base -drawerWidth, user drags right to open -> dx positive
-    translate = Math.max(-drawerWidth, -drawerWidth + dx);
-  }
-  // clamp
+  if(wasOpen) translate = Math.min(0, dx);
+  else translate = Math.max(-drawerWidth, -drawerWidth + dx);
   if(translate > 0) translate = 0;
   if(translate < -drawerWidth) translate = -drawerWidth;
-
-  // apply transform smoothly via RAF (but here direct is fine)
   mobileDrawer.style.transform = `translateX(${translate}px)`;
-
-  // overlay opacity proportional to openness
   const openness = 1 - (Math.abs(translate) / drawerWidth);
   mobileOverlay.style.background = `rgba(0,0,0,${0.45 * openness})`;
   mobileOverlay.style.display = 'block';
-
-  // velocity calc
   const now = performance.now();
   const dt = now - lastT || 16;
   vx = (x - lastX) / dt;
   lastX = x;
   lastT = now;
 }
-
 function endDrag(){
   if(!dragging) return;
   dragging = false;
-  // read final translate
   const style = window.getComputedStyle(mobileDrawer);
   let translateX = 0;
   const matrix = style.transform;
@@ -690,46 +671,25 @@ function endDrag(){
     try{
       const values = matrix.match(/matrix.*\((.+)\)/)[1].split(', ');
       translateX = parseFloat(values[4]);
-    }catch(e){
-      translateX = 0;
-    }
+    }catch(e){ translateX = 0; }
   } else {
-    // fallback parse inline transform
     const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
     translateX = m ? parseFloat(m[1]) : 0;
   }
-
   const wasOpen = mobileDrawer.classList.contains('show');
-  // Decide open/close:
-  // 1) If fling velocity surpasses threshold -> use direction
-  // 2) Else use distance threshold (short)
   const openDecision = (() => {
-    if(Math.abs(vx) > VELOCITY_THRESHOLD){
-      // velocity px/ms: positive -> finger moved right -> open, negative -> close
-      return vx > 0;
-    }
-    // otherwise use position threshold
-    if(wasOpen){
-      // if more than SHORT_THRESHOLD to left => close
-      return !(Math.abs(translateX) > SHORT_THRESHOLD);
-    } else {
-      // if translated right more than (drawerWidth - SHORT_THRESHOLD) => open
-      return (Math.abs(translateX) < (drawerWidth - SHORT_THRESHOLD));
-    }
+    if(Math.abs(vx) > VELOCITY_THRESHOLD) return vx > 0;
+    if(wasOpen) return !(Math.abs(translateX) > SHORT_THRESHOLD);
+    else return (Math.abs(translateX) < (drawerWidth - SHORT_THRESHOLD));
   })();
-
-  // restore transitions for snap
   mobileDrawer.style.transition = '';
   mobileOverlay.style.transition = '';
-
   if(openDecision){
-    // open
     mobileDrawer.style.transform = '';
     mobileDrawer.classList.add('show');
     mobileOverlay.classList.add('show');
     updateOpenLobbyBtnVisibility();
   } else {
-    // close
     mobileDrawer.style.transform = `translateX(-${drawerWidth}px)`;
     mobileDrawer.classList.remove('show');
     mobileOverlay.classList.remove('show');
@@ -739,14 +699,13 @@ function endDrag(){
         mobileDrawer.style.display = 'none';
         updateOpenLobbyBtnVisibility();
       }
-    }, 180);
+    }, 220);
   }
-  // reset velocity
   vx = 0;
   mobileDrawer.style.willChange = '';
 }
 
-/* Touch handlers using the new fast drag logic */
+/* touch handlers for drag */
 let touchStarted = false;
 let touchStartX = 0;
 let touchStartY = 0;
@@ -756,17 +715,11 @@ document.addEventListener('touchstart', (e)=>{
   const t = e.touches[0];
   touchStartX = t.clientX;
   touchStartY = t.clientY;
-  touchStarted = true;
-
+  touchStarted = false;
   const drawerOpen = mobileDrawer.classList.contains('show');
-  // Start drag if:
-  // - drawer open (allow closing drag from anywhere on drawer)
-  // - OR drawer closed AND touch started within EDGE_ZONE AND HOME view visible
   if(drawerOpen || (home.style.display !== 'none' && touchStartX <= EDGE_ZONE)){
     beginDrag(touchStartX, drawerOpen);
-  } else {
-    // not a drag start
-    touchStarted = false;
+    touchStarted = true;
   }
 }, {passive:true});
 
@@ -775,16 +728,8 @@ document.addEventListener('touchmove', (e)=>{
   const t = e.touches[0];
   const dx = Math.abs(t.clientX - touchStartX);
   const dy = Math.abs(t.clientY - touchStartY);
-  // if vertical scroll dominates, cancel drag
-  if(dy > dx + 8){
-    if(dragging) { endDrag(); }
-    touchStarted = false;
-    return;
-  }
-  // perform drag move
-  if(dragging){
-    dragMove(t.clientX);
-  }
+  if(dy > dx + 8){ if(dragging) endDrag(); touchStarted = false; return; }
+  if(dragging) dragMove(t.clientX);
 }, {passive:true});
 
 document.addEventListener('touchend', (e)=>{
@@ -793,7 +738,12 @@ document.addEventListener('touchend', (e)=>{
   if(dragging) endDrag();
 });
 
-/* keyboard handling: visualViewport to keep chat above keyboard */
+/* overlay / button events */
+openLobbyBtn.addEventListener('click', openMobileDrawer);
+mobileOverlay.addEventListener('click', closeMobileDrawer);
+closeDrawer.addEventListener('click', closeMobileDrawer);
+
+/* keyboard handling using visualViewport */
 function onViewportResize(){
   const vv = window.visualViewport;
   let keyboardHeight = 0;
@@ -803,7 +753,6 @@ function onViewportResize(){
   } else {
     keyboardHeight = Math.max(0, (document._lastInnerHeight || window.innerHeight) - window.innerHeight);
   }
-
   if(keyboardHeight > 0){
     chat.style.paddingBottom = (keyboardHeight + 84) + 'px';
     setTimeout(()=> scrollChatToBottom(false), 60);
@@ -814,30 +763,24 @@ function onViewportResize(){
 }
 document._lastInnerHeight = window.innerHeight;
 window.addEventListener('resize', ()=> { document._lastInnerHeight = Math.max(document._lastInnerHeight || 0, window.innerHeight); });
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', onViewportResize);
-} else {
-  window.addEventListener('resize', onViewportResize);
-}
-msg.addEventListener('focus', ()=>{
-  setTimeout(()=> { onViewportResize(); scrollChatToBottom(false); }, 60);
-});
+if(window.visualViewport) window.visualViewport.addEventListener('resize', onViewportResize);
+else window.addEventListener('resize', onViewportResize);
+msg.addEventListener('focus', ()=> { setTimeout(()=> { onViewportResize(); scrollChatToBottom(false); }, 60); });
 msg.addEventListener('blur', ()=> { setTimeout(()=> onViewportResize(), 60); });
 
-/* Rooms refresh polling */
+/* rooms refresh polling & snapshot */
 async function refreshRoomsEvery(interval=30000){
   await loadRooms();
   setTimeout(()=>refreshRoomsEvery(interval), interval);
 }
 refreshRoomsEvery();
 
-/* keep room list updated with onSnapshot */
 onSnapshot(collection(db,'rooms'), snap => {
   roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; roomListMobile.innerHTML = '';
   snap.forEach(d => renderRoomEntry(d.id));
 });
 
-/* Utilities */
+/* utility helpers */
 function escapeHtml(s){
   if(!s && s !== 0) return '';
   return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
@@ -850,7 +793,7 @@ function scrollChatToBottom(instant = true){
   }catch(e){}
 }
 
-/* initial mobile drawer closed on load */
+/* ensure mobile drawer starts closed on load */
 if(isMobile){
   mobileOverlay.style.display = 'none';
   mobileDrawer.style.display = 'none';
@@ -862,7 +805,7 @@ if(isMobile){
   updateOpenLobbyBtnVisibility();
 }
 
-/* Notification helper when hidden */
+/* notification helper */
 document.addEventListener('visibilitychange', ()=> {
   if(!document.hidden) lastMessageTime = Date.now();
 });
