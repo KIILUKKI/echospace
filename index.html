@@ -31,7 +31,7 @@
   #logoutBtn{position:absolute;top:12px;right:12px;padding:8px 12px;background:#f85149;color:#fff;border:none;border-radius:10px;cursor:pointer;z-index:25;font-weight:700}
 
 /* Lobby (left) */
-  #homeLeft{width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease;position:relative;}
+  #homeLeft{width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);position:relative;}
   #homeLeft.collapsed{width:40px;padding:8px}
   #lobbyHeader{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   #lobbyTitle{flex:1;font-weight:700}
@@ -58,7 +58,7 @@
   #header .left{display:flex;align-items:center;gap:8px}
   #roomName{font-weight:700}
   #chatWrapper{display:flex;flex:1;overflow:hidden;min-height:0}
-  #chatSidebar{width:var(--lobby-width);background:var(--panel);border-right:1px solid #0d1117;padding:8px;overflow:auto;transition:width 200ms ease}
+  #chatSidebar{width:var(--lobby-width);background:var(--panel);border-right:1px solid #0d1117;padding:8px;overflow:auto;transition:width 200ms ease;box-sizing:border-box;}
   #chatSidebar.collapsed{width:40px;padding:6px}
   #chatWrapperMain{flex:1;display:flex;flex-direction:column;min-height:0}
   #chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,transparent, rgba(255,255,255,0.01))}
@@ -79,10 +79,10 @@
   #emojiBtn{border:none;background:transparent;color:var(--text);font-size:20px;cursor:pointer}
 
 /* mobile specifics */
-  .mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:40;display:none}
-  .mobile-overlay.show{display:block}
-  .mobile-lobby-drawer{position:fixed;left:0;top:0;height:100%;width:80%;max-width:340px;background:var(--panel);z-index:50;padding:12px;transform:translateX(-8%);transition:transform 200ms ease}
-  .mobile-lobby-drawer.show{transform:translateX(0)}
+  .mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;display:none;transition:background 220ms ease}
+  .mobile-overlay.show{display:block;background:rgba(0,0,0,0.45)}
+  .mobile-lobby-drawer{position:fixed;left:0;top:0;height:100%;width:80%;max-width:340px;background:var(--panel);z-index:50;padding:12px;transform:translateX(-110%);transition:transform 220ms cubic-bezier(.2,.9,.3,1),opacity 200ms ease;opacity:0}
+  .mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
   #openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 
 /* collapsed small labels */
@@ -118,7 +118,7 @@
   <div id="home">
     <button id="logoutBtn" title="Logout">Logout</button>
 
-    <!-- Desktop lobby (keeps desktop unchanged) -->
+    <!-- Desktop lobby (keeps desktop visible) -->
     <aside id="homeLeft" aria-label="Lobby">
       <div id="lobbyHeader">
         <div id="lobbyTitle">Huoneet</div>
@@ -141,7 +141,7 @@
       </div>
       <button id="createRoom">Luo / Liity huoneeseen</button>
       <div style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center;max-width:420px">
-        Pyyhkäise oikealle vasemmassa reunassa avataksesi huonevalikon mobiilissa.
+        Pyyhkäise reunasta avataksesi huonevalikon mobiilissa.
       </div>
     </main>
   </div>
@@ -190,7 +190,7 @@
     <div id="roomListMobile"></div>
   </div>
 
-  <!-- Blue three-line button (mobile) - will be hidden in chat -->
+  <!-- Blue three-line button (mobile) -->
   <button id="openLobbyBtn" title="Avaa lobby">☰</button>
 
 </div>
@@ -198,7 +198,8 @@
 <script type="module">
 /* ===================
    App logic (single module)
-   - PÄIVITYS: mobiiliswipe + napin näyttölogiikka
+   - Fix: ensure desktop lobby visible and non-collapsible
+   - Mobile: drawer closed on load + smooth animation + swipe open
    =================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -278,6 +279,28 @@ nickInput.value = localStorage.getItem('nick') || '';
 if("Notification" in window && Notification.permission !== 'granted'){
   Notification.requestPermission().catch(()=>{});
 }
+
+/* Ensure desktop lobby visible and cannot be collapsed:
+   If not mobile, force visible and hide collapse controls. */
+function enforceDesktopLobby(){
+  if(!isMobile){
+    // force visible
+    lobby.style.display = 'block';
+    chatSidebar.style.display = 'block';
+    // ensure width is the default if previously changed
+    document.documentElement.style.setProperty('--lobby-width', localStorage.getItem('lobbySizeIndex') === '0' ? '120px' : (localStorage.getItem('lobbySizeIndex') === '2' ? '360px' : '260px'));
+    // hide toggle buttons so user cannot collapse
+    if(lobbyToggle) lobbyToggle.style.display = 'none';
+    if(sidebarToggle) sidebarToggle.style.display = 'none';
+  } else {
+    // mobile: hide the desktop lobby area
+    lobby.style.display = 'none';
+    // chatSidebar hidden on mobile until in desktop-like view
+    chatSidebar.style.display = 'none';
+    // show openLobbyBtn only in home view (handled elsewhere)
+  }
+}
+enforceDesktopLobby();
 
 /* Session UI */
 function showHome(){
@@ -514,7 +537,7 @@ back.onclick = ()=> {
   chat.innerHTML = '';
 };
 
-/* lobby collapse/size */
+/* lobby size (keeps feature, but collapse hidden on desktop) */
 const LOBBY_SIZES = [
   {name:'small', width:'120px'},
   {name:'normal', width:'260px'},
@@ -523,20 +546,6 @@ const LOBBY_SIZES = [
 let lobbySizeIndex = parseInt(localStorage.getItem('lobbySizeIndex')||'1',10);
 applyLobbySize();
 
-lobbyToggle.addEventListener('click', ()=> {
-  const collapsed = lobby.classList.toggle('collapsed');
-  chatSidebar.classList.toggle('collapsed', collapsed);
-  lobbyToggle.textContent = collapsed ? '▶' : '◀';
-  sidebarToggle.textContent = collapsed ? '▶' : '◀';
-  localStorage.setItem('lobbyCollapsed', collapsed ? '1' : '0');
-});
-sidebarToggle.addEventListener('click', ()=> {
-  const collapsed = chatSidebar.classList.toggle('collapsed');
-  lobby.classList.toggle('collapsed', collapsed);
-  sidebarToggle.textContent = collapsed ? '▶' : '◀';
-  lobbyToggle.textContent = collapsed ? '▶' : '◀';
-  localStorage.setItem('lobbyCollapsed', collapsed ? '1' : '0');
-});
 lobbySizeBtn.addEventListener('click', ()=> {
   lobbySizeIndex = (lobbySizeIndex + 1) % LOBBY_SIZES.length;
   applyLobbySize();
@@ -546,18 +555,18 @@ function applyLobbySize(){
   const s = LOBBY_SIZES[lobbySizeIndex];
   document.documentElement.style.setProperty('--lobby-width', s.width);
   lobbySizeBtn.textContent = s.name[0].toUpperCase();
-  const collapse = (s.name === 'small');
-  lobby.classList.toggle('collapsed', collapse);
-  chatSidebar.classList.toggle('collapsed', collapse);
-}
-if(localStorage.getItem('lobbyCollapsed') === '1'){
-  lobby.classList.add('collapsed');
-  chatSidebar.classList.add('collapsed');
-  lobbyToggle.textContent = '▶';
-  sidebarToggle.textContent = '▶';
+  // do NOT collapse on desktop; collapse state only visual if small selected
+  if(isMobile) {
+    const collapse = (s.name === 'small');
+    lobby.classList.toggle('collapsed', collapse);
+    chatSidebar.classList.toggle('collapsed', collapse);
+  } else {
+    lobby.classList.remove('collapsed');
+    chatSidebar.classList.remove('collapsed');
+  }
 }
 
-/* Mobile drawer open/close */
+/* Mobile drawer open/close with smooth animation */
 openLobbyBtn.addEventListener('click', openMobileDrawer);
 mobileOverlay.addEventListener('click', closeMobileDrawer);
 closeDrawer.addEventListener('click', closeMobileDrawer);
@@ -572,24 +581,26 @@ function openMobileDrawer(){
 function closeMobileDrawer(){
   mobileOverlay.classList.remove('show');
   mobileDrawer.classList.remove('show');
-  mobileOverlay.style.display = 'none'; mobileDrawer.style.display = 'none';
-  mobileOverlay.setAttribute('aria-hidden','true'); mobileDrawer.setAttribute('aria-hidden','true');
-  updateOpenLobbyBtnVisibility();
+  // leave a tiny delay before setting display none so CSS animation finishes
+  setTimeout(()=>{ 
+    if(!mobileDrawer.classList.contains('show')){
+      mobileOverlay.style.display = 'none'; mobileDrawer.style.display = 'none';
+      mobileOverlay.setAttribute('aria-hidden','true'); mobileDrawer.setAttribute('aria-hidden','true');
+      updateOpenLobbyBtnVisibility();
+    }
+  }, 260);
 }
 
-/* --- IMPORTANT: update openLobbyBtn visibility according to:
-      - only show on mobile
-      - show only when we're in HOME (lobby) view (not in chat)
-      - hide if drawer is open
-   This fulfils: "Chatti kohdassa ei saa avata huone valikkoa eli ota se sininen kolmen viiva nappi pois chatti näkymässä.
-   Kun se on auki taas sininen kolme viivainen nappi katoaa." */
+/* update openLobbyBtn visibility:
+   - only on mobile,
+   - only on HOME (not in chat),
+   - hide when drawer open */
 function updateOpenLobbyBtnVisibility(){
   const drawerOpen = mobileDrawer.classList.contains('show') || mobileOverlay.classList.contains('show');
   if(!isMobile){
     openLobbyBtn.style.display = 'none';
     return;
   }
-  // Show only when home is visible (lobby context) and drawer is closed
   const isHomeVisible = home.style.display !== 'none';
   if(isHomeVisible && !drawerOpen){
     openLobbyBtn.style.display = 'block';
@@ -597,24 +608,20 @@ function updateOpenLobbyBtnVisibility(){
     openLobbyBtn.style.display = 'none';
   }
 }
+/* override show* functions to update button visibility */
+const origShowHome = showHome;
+showHome = function(){ origShowHome(); updateOpenLobbyBtnVisibility(); };
+const origShowMain = showMain;
+showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
+const origShowLogin = showLogin;
+showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
 
-/* Ensure visibility changes on view changes */
-const originalShowHome = showHome;
-showHome = function(){ originalShowHome(); updateOpenLobbyBtnVisibility(); }
-const originalShowMain = showMain;
-showMain = function(){ originalShowMain(); updateOpenLobbyBtnVisibility(); }
-const originalShowLogin = showLogin;
-showLogin = function(){ originalShowLogin(); updateOpenLobbyBtnVisibility(); }
-
-/* --- Swipe to open/close drawer (mobiilissa) ---
-   - Pyyhkäisy vasemmasta reunasta oikealle avaa drawer (jos home on näkyvissä)
-   - Pyyhkäisy oikealta vasemmalle sulkee drawer
-*/
+/* Swipe to open drawer on mobile (only from left edge and only in HOME) */
 let touchStartX = 0;
 let touchStartY = 0;
 let touchActive = false;
-const SWIPE_THRESHOLD = 60; // px
-const EDGE_ZONE = 50; // px from left edge
+const SWIPE_THRESHOLD = 60;
+const EDGE_ZONE = 50;
 
 document.addEventListener('touchstart', (e)=>{
   if(!isMobile) return;
@@ -623,36 +630,26 @@ document.addEventListener('touchstart', (e)=>{
   touchStartY = t.clientY;
   touchActive = true;
 });
-
-document.addEventListener('touchmove', (e)=>{
-  // prevent accidental scroll detection - we don't need to block default behavior here
-});
-
 document.addEventListener('touchend', (e)=>{
   if(!isMobile || !touchActive) return;
   touchActive = false;
   const changed = e.changedTouches[0];
   const dx = changed.clientX - touchStartX;
   const dy = changed.clientY - touchStartY;
-  // if vertical swipe (more vertical than horizontal) ignore
   if(Math.abs(dy) > Math.abs(dx)) return;
-
   const drawerOpen = mobileDrawer.classList.contains('show');
 
-  // open gesture: start near left edge, swipe right sufficiently, only when HOME view is visible (user asked: "Kun ollaan lobbyssä huone valikon saa avattua swaippaamalla.")
+  // open: only when HOME visible, start near left edge
   if(!drawerOpen && (home.style.display !== 'none') && touchStartX < EDGE_ZONE && dx > SWIPE_THRESHOLD){
     openMobileDrawer();
     return;
   }
-  // close gesture: if drawer is open and swipe left enough, close it
+  // close if drawer open and swipe left
   if(drawerOpen && dx < -SWIPE_THRESHOLD){
     closeMobileDrawer();
     return;
   }
 });
-
-/* Also hide openLobbyBtn when user navigates to chat or drawer is open */
-document.addEventListener('visibilitychange', ()=> updateOpenLobbyBtnVisibility());
 
 /* Rooms refresh polling */
 async function refreshRoomsEvery(interval=30000){
@@ -661,6 +658,12 @@ async function refreshRoomsEvery(interval=30000){
 }
 refreshRoomsEvery();
 
+/* keep room list updated with onSnapshot */
+onSnapshot(collection(db,'rooms'), snap => {
+  roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; roomListMobile.innerHTML = '';
+  snap.forEach(d => renderRoomEntry(d.id));
+});
+
 /* small safety: escape HTML helpers */
 function escapeHtml(s){
   if(!s && s !== 0) return '';
@@ -668,14 +671,19 @@ function escapeHtml(s){
 }
 function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
 
-/* show/hide openLobbyBtn initially */
-updateOpenLobbyBtnVisibility();
-
-/* keep room list updated with onSnapshot */
-onSnapshot(collection(db,'rooms'), snap => {
-  roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; roomListMobile.innerHTML = '';
-  snap.forEach(d => renderRoomEntry(d.id));
-});
+/* make sure initial mobile drawer is closed on page load */
+if(isMobile){
+  mobileOverlay.style.display = 'none';
+  mobileDrawer.style.display = 'none';
+  mobileDrawer.classList.remove('show');
+  mobileOverlay.classList.remove('show');
+  // ensure openLobbyBtn visible only on home (updated by showHome)
+  updateOpenLobbyBtnVisibility();
+} else {
+  // ensure desktop lobby enforced
+  enforceDesktopLobby();
+  updateOpenLobbyBtnVisibility();
+}
 
 /* Notification helper when hidden */
 document.addEventListener('visibilitychange', ()=> {
