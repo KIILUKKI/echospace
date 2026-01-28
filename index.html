@@ -55,14 +55,52 @@ border:none;font-weight:600;cursor:pointer
 }
 
 /* MAIN */
-#main{display:none;height:100%;flex-direction:column}
+#main{
+display:none;
+height:100%;
+flex-direction:column
+}
 #header{
 height:52px;background:#161b22;
 display:flex;align-items:center;
 padding:0 14px;border-bottom:1px solid #0d1117
 }
-#chat{flex:1;padding:16px;overflow-y:auto}
-#msg{padding:14px;width:100%;border:none;background:#161b22;color:#fff}
+#header button{
+background:none;border:none;color:#fff;
+font-size:18px;cursor:pointer;margin-right:10px
+}
+
+/* CHAT */
+#chat{
+flex:1;
+padding:16px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:10px
+}
+.message{
+max-width:70%;
+padding:10px 14px;
+border-radius:14px;
+background:#161b22;
+word-wrap:break-word
+}
+.message.me{
+align-self:flex-end;
+background:#58a6ff;
+color:#000
+}
+.message b{
+font-weight:600
+}
+#msg{
+padding:14px;
+width:100%;
+border:none;
+background:#161b22;
+color:#fff
+}
 </style>
 </head>
 
@@ -94,7 +132,10 @@ padding:0 14px;border-bottom:1px solid #0d1117
 
 <!-- MAIN -->
 <div id="main">
+<div id="header">
 <button id="back">←</button>
+<span id="roomName"></span>
+</div>
 <div id="chat"></div>
 <input id="msg" placeholder="Message...">
 </div>
@@ -129,6 +170,7 @@ const nickInput=document.getElementById("nick");
 const nickColorInput=document.getElementById("nickColor");
 const createRoom=document.getElementById("createRoom");
 const back=document.getElementById("back");
+const roomName=document.getElementById("roomName");
 
 let nick="", room="";
 
@@ -190,6 +232,7 @@ if(pass!==snap.data().password) return alert("Wrong password");
 home.style.display="none";
 main.style.display="flex";
 room=r;
+roomName.textContent="# "+r;
 
 onSnapshot(
 query(collection(db,"rooms",room,"messages"),orderBy("time")),
@@ -197,7 +240,10 @@ snap=>{
 chat.innerHTML="";
 snap.forEach(d=>{
 const m=d.data();
-chat.innerHTML+=`<div><b style="color:${m.color}">${m.name}</b>: ${m.text}</div>`;
+const div=document.createElement("div");
+div.className="message"+(m.name===nick?" me":"");
+div.innerHTML=`<b style="color:${m.color}">${m.name}</b><br>${m.text}`;
+chat.appendChild(div);
 });
 chat.scrollTop=chat.scrollHeight;
 });
