@@ -29,7 +29,7 @@ border:none;font-weight:600;cursor:pointer
 }
 
 /* HOME */
-#home{position:absolute;inset:0;display:none;background:#0b0f14}
+#home{position:absolute;inset:0;display:none;background:#0b0f14;display:flex}
 #homeLeft{
 width:260px;height:100%;
 background:#161b22;padding:14px;
@@ -55,30 +55,15 @@ border:none;font-weight:600;cursor:pointer
 }
 
 /* MAIN */
-#main{
-display:none;
-height:100%;
-flex-direction:column;
-}
+#main{display:none;height:100%;flex-direction:column}
 
-/* 🔴 TÄMÄ PUUTTUI → aiheutti "scuffed" chatin */
-#chatWrapper{
-flex:1;
-display:flex;
-overflow:hidden;
-}
-
+/* CHAT WRAPPER */
+#chatWrapper{flex:1;display:flex;overflow:hidden}
 #chatSidebar{
-width:260px;
-background:#161b22;
-border-right:1px solid #0d1117;
+width:260px;background:#161b22;
+border-right:1px solid #0d1117
 }
-
-#chatWrapperMain{
-flex:1;
-display:flex;
-flex-direction:column;
-}
+#chatWrapperMain{flex:1;display:flex;flex-direction:column}
 
 /* HEADER */
 #header{
@@ -93,11 +78,9 @@ font-size:18px;cursor:pointer;margin-right:10px
 
 /* CHAT */
 #chat{
-flex:1;
-padding:16px;
+flex:1;padding:16px;
 overflow-y:auto;
-display:flex;
-flex-direction:column;
+display:flex;flex-direction:column;
 gap:10px
 }
 .message{display:flex;gap:10px}
@@ -206,9 +189,140 @@ font-size:12px;color:#8b949e;margin-left:16px
 
 </div>
 
-<script type="module">
-/* 🔹 JS ON TISMALLEEN SAMA kuin sun alkuperäisessä isossa chatissa 🔹 */
-/* mitään uutta ei ole lisätty, mitään ei poistettu */
+<script>
+/* ====== SIMPLE LOCAL MINI CHAT ====== */
+
+const login = document.getElementById("login");
+const home = document.getElementById("home");
+const main = document.getElementById("main");
+
+const loginBtn = document.getElementById("loginBtn");
+const loginNick = document.getElementById("loginNick");
+const loginPass = document.getElementById("loginPass");
+
+const roomList = document.getElementById("roomList");
+const createRoomBtn = document.getElementById("createRoom");
+const nickInput = document.getElementById("nick");
+const nickColor = document.getElementById("nickColor");
+
+const chat = document.getElementById("chat");
+const msgInput = document.getElementById("msg");
+const roomNameEl = document.getElementById("roomName");
+const backBtn = document.getElementById("back");
+
+let currentRoom = null;
+let user = null;
+
+/* STORAGE */
+const getRooms = () => JSON.parse(localStorage.getItem("rooms") || "[]");
+const saveRooms = r => localStorage.setItem("rooms", JSON.stringify(r));
+
+/* LOGIN */
+loginBtn.onclick = () => {
+  if (!loginNick.value) return;
+  user = loginNick.value;
+  nickInput.value = user;
+  login.style.display = "none";
+  home.style.display = "flex";
+  renderRooms();
+};
+
+/* ROOMS */
+function renderRooms() {
+  roomList.innerHTML = "";
+  getRooms().forEach(r => {
+    const d = document.createElement("div");
+    d.className = "room";
+    d.textContent = r;
+    d.onclick = () => enterRoom(r);
+    roomList.appendChild(d);
+  });
+}
+
+createRoomBtn.onclick = () => {
+  const name = prompt("Room name?");
+  if (!name) return;
+  const rooms = getRooms();
+  if (!rooms.includes(name)) {
+    rooms.push(name);
+    saveRooms(rooms);
+  }
+  renderRooms();
+};
+
+/* CHAT */
+function enterRoom(r) {
+  currentRoom = r;
+  roomNameEl.textContent = r;
+  home.style.display = "none";
+  main.style.display = "flex";
+  loadMessages();
+}
+
+backBtn.onclick = () => {
+  main.style.display = "none";
+  home.style.display = "flex";
+};
+
+function loadMessages() {
+  chat.innerHTML = "";
+  const msgs = JSON.parse(localStorage.getItem("chat_"+currentRoom) || "[]");
+  msgs.forEach(addMessage);
+}
+
+function addMessage(m) {
+  const wrap = document.createElement("div");
+  wrap.className = "message";
+
+  const av = document.createElement("div");
+  av.className = "avatar";
+  av.style.background = m.color;
+  av.textContent = m.user[0].toUpperCase();
+
+  const box = document.createElement("div");
+  box.className = "msg";
+  box.innerHTML = `<b>${m.user}</b>
+    <span class="time">${m.time}</span><br>${m.text}`;
+
+  wrap.append(av, box);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* SEND */
+msgInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && msgInput.value.trim()) {
+    const m = {
+      user,
+      text: msgInput.value,
+      color: nickColor.value,
+      time: new Date().toLocaleTimeString().slice(0,5)
+    };
+    const key = "chat_"+currentRoom;
+    const msgs = JSON.parse(localStorage.getItem(key) || "[]");
+    msgs.push(m);
+    localStorage.setItem(key, JSON.stringify(msgs));
+    addMessage(m);
+    msgInput.value = "";
+  }
+});
+
+/* EMOJI */
+const emojis = ["😀","😂","😍","😎","😭","👍","🔥","❤️","🎉"];
+const emojiPicker = document.getElementById("emojiPicker");
+const emojiBtn = document.getElementById("emojiBtn");
+
+emojis.forEach(e=>{
+  const d=document.createElement("div");
+  d.textContent=e;
+  d.onclick=()=>{msgInput.value+=e;emojiPicker.style.display="none"};
+  emojiPicker.appendChild(d);
+});
+
+emojiBtn.onclick = () => {
+  emojiPicker.style.display =
+    emojiPicker.style.display === "flex" ? "none" : "flex";
+};
 </script>
 </body>
 </html>
