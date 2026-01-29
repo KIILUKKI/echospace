@@ -10,6 +10,10 @@ Swipe reply (vedä viestiä → reply) (vain moiililla otetaanmobiililla siis re
 
 Floating “scroll to bottom” -nappi Mobiililla sekä desktopilla.
 
+Linkki ominaisuus eli ei tarvitse kopoida linkkiä vaan suoraan sitä painamalla avaa linkin.
+
+GIF picker - siihen sen saman kuin emori picker oma tabinsa gifeille.
+
 Komennot:
 /roll
 → Nick rolled 🎲 4
