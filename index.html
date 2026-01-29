@@ -81,14 +81,14 @@
 .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000}
 /* Reserve horizontal space on the right for action buttons (reply & more) so they don't overlap message text */
 .msg{background:var(--panel);padding:10px 96px 10px 14px;border-radius:12px;position:relative;max-width:70%}
-.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:calc(100% - 96px);}
+.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:100%;}
 .time{font-size:11px;color:var(--muted);margin-left:6px}
 .reply-btn{position:absolute;right:52px;top:8px;font-size:12px;color:var(--muted);cursor:pointer;opacity:0}
 .msg:hover .reply-btn{opacity:1}
 .reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px;max-width:calc(100% - 96px);}
 
 /* edited note */
-.edited-note{font-size:12px;color:var(--muted);margin-left:8px}
+.edited-note{font-size:12px;color:var(--muted);margin-left:8px;display:inline-block}
 
 /* typing indicator (between chat and input) */
 #typingIndicator{padding:6px 12px;color:var(--muted);font-size:13px;min-height:18px;display:none}
@@ -104,7 +104,7 @@
 #emojiPicker div.emoji{cursor:pointer;font-size:18px}
 
 /* MORE (three-dots) button next to reply — positioned at the far right (z-axis on top) */
-.more-btn{position:absolute;right:12px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px;z-index:12}
+.more-btn{position:absolute;right:12px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px;z-index:12;transform:none}
 .msg:hover .more-btn{opacity:1}
 
 /* mobile specifics */
@@ -258,19 +258,9 @@
 
 <script type="module">
 /* ===================
-   Korjattu versio:
-   - incremental rendering (docChanges) -> pienempi viive
-   - /clear ja /delete siirretty handleCommand:iin (toimii nyt)
-   - lisätty /delet alias
-   - lisätty /help (näytetään vain sinulle alertissa)
-   - muokattuihin viesteihin lisätään editedNote: "Edited" ja se näkyy viestin perässä
-   - replyBox absoluuttinen: ei pomppaa alhaalta
-   - käyttäjän väri tallennetaan Firestoreen users-kokoelmaan
-   - kevyempi näkyvyyden/scrollin hallinta
-   - Tyyppi-ilmoitus korjattu ja lokalisoitu (suomi)
-   - Oikean klikin valikko (dropdown) lisätty oman viestin edit/delete:ksi
-   - lisätty kolmipiste-painike (⋯) omaan viestiin, joka avaa saman Edit/Delete -valikon (korvaa oikea-klikki)
-   - varattu oikea tila painikkeille estämään päällekkäisyyttä Edited/reply-tekstin kanssa
+   Korjattu versio (vain attachMobileInteractions muokattu niin, että
+   texti ei liiku X-akselilla swipe-to-replyssä).
+   Muutokset minimoitu.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -892,12 +882,20 @@ function hideContextMenu(){
   contextMenu.setAttribute('aria-hidden','true');
 }
 
-/* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply */
+/* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply
+   IMPORTANT: changed so that text (msg-text) does NOT move on X-axis.
+   We only translate avatar and action buttons so the visible content stays fixed.
+*/
 function attachMobileInteractions(el, msgId, messageData){
   let longPressTimer = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let dragging = false;
+
+  // elements to move (leave text in .msg-text untouched)
+  const avatarEl = () => el.querySelector('.avatar');
+  const moreBtnEl = () => el.querySelector('.more-btn');
+  const replyBtnEl = () => el.querySelector('.reply-btn');
 
   el.addEventListener('touchstart', (e)=>{
     const t = e.touches[0];
@@ -916,7 +914,10 @@ function attachMobileInteractions(el, msgId, messageData){
       }, 650);
     }
     dragging = false;
-    el.style.transition = '';
+    // ensure any previous transforms cleared
+    const a = avatarEl(); if(a) a.style.transform = '';
+    const m = moreBtnEl(); if(m) m.style.transform = '';
+    const r = replyBtnEl(); if(r) r.style.transform = '';
   }, {passive:true});
 
   el.addEventListener('touchmove', (e)=>{
@@ -934,13 +935,15 @@ function attachMobileInteractions(el, msgId, messageData){
     if(dragging){
       e.preventDefault();
       const capped = Math.min(Math.max(dx, 0), 120);
-      el.style.transform = `translateX(${capped}px)`;
-      el.style.willChange = 'transform';
-      el.style.transition = 'none';
+      // Move only non-text UI parts so the message text remains fixed on X-axis
+      const a = avatarEl(); if(a) { a.style.transform = `translateX(${capped}px)`; a.style.willChange = 'transform'; }
+      const m = moreBtnEl(); if(m) { m.style.transform = `translateX(${capped}px)`; m.style.willChange = 'transform'; }
+      const r = replyBtnEl(); if(r) { r.style.transform = `translateX(${capped}px)`; r.style.willChange = 'transform'; }
+
       if(capped > 36){
-        const m = messageData;
+        const md = messageData;
         replyBox.style.display = 'block';
-        replyBox.innerHTML = `Replying to <b>${escapeHtml(m.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
+        replyBox.innerHTML = `Replying to <b>${escapeHtml(md.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
         const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
       } else if(capped <= 36) {
         if(!replyTo) replyBox.style.display = 'none';
@@ -950,24 +953,35 @@ function attachMobileInteractions(el, msgId, messageData){
 
   el.addEventListener('touchend', ()=>{
     if(longPressTimer) clearTimeout(longPressTimer);
-    if(el.style.transform && el.style.transform !== 'none'){
-      const m = el.style.transform.match(/translateX\((\d+)px\)/);
-      const px = m ? parseInt(m[1],10) : 0;
-      el.style.transition = 'transform 180ms ease';
-      if(px > 60){
-        el.style.transform = 'translateX(0)';
-        setTimeout(()=>{
-          replyTo = { name: messageData.name, text: messageData.text };
-          replyBox.style.display = 'block';
-          replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-          const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
-        }, 160);
-      } else {
-        el.style.transform = 'translateX(0)';
-        setTimeout(()=>{ if(!replyTo) replyBox.style.display = 'none'; }, 160);
-      }
+    // compute px from transforms (we look at avatar transform as representative)
+    const a = avatarEl();
+    let px = 0;
+    if(a && a.style.transform){
+      const m = a.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
+      px = m ? parseInt(m[1],10) : 0;
     }
-    el.style.willChange = '';
+    // reset transforms with smooth transition
+    const reset = (node) => {
+      if(!node) return;
+      node.style.transition = 'transform 180ms ease';
+      node.style.transform = '';
+      setTimeout(()=>{ node.style.transition = ''; node.style.willChange = ''; }, 200);
+    };
+    reset(avatarEl());
+    reset(moreBtnEl());
+    reset(replyBtnEl());
+
+    if(px > 60){
+      // user completed swipe -> open reply UI (keep text unmoved)
+      setTimeout(()=>{
+        replyTo = { name: messageData.name, text: messageData.text };
+        replyBox.style.display = 'block';
+        replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
+        const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
+      }, 160);
+    } else {
+      setTimeout(()=>{ if(!replyTo) replyBox.style.display = 'none'; }, 160);
+    }
   });
 }
 
