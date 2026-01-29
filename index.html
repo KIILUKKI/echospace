@@ -350,6 +350,7 @@
    - Remove three-dots "more" button on mobile; keep long-press showing same Edit/Delete menu.
    - Add fullscreen toggle button between How To and Settings.
    - Keep other behavior unchanged.
+   - Added: login / demo handlers and hide top buttons on login view.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -467,6 +468,10 @@ function showHome(){
   login.style.display = 'none';
   home.style.display = 'flex';
   main.style.display = 'none';
+  // show top-right controls on home
+  if(howBtn) howBtn.style.display = '';
+  if(fullBtn) fullBtn.style.display = '';
+  if(settingsBtn) settingsBtn.style.display = '';
   updateOpenLobbyBtnVisibility();
   updateNickEditable();
 }
@@ -475,6 +480,10 @@ function showLogin(){
   home.style.display = 'none';
   main.style.display = 'none';
   localStorage.removeItem('session');
+  // hide top-right controls on login screen
+  if(howBtn) howBtn.style.display = 'none';
+  if(fullBtn) fullBtn.style.display = 'none';
+  if(settingsBtn) settingsBtn.style.display = 'none';
   updateOpenLobbyBtnVisibility();
   updateNickEditable();
 }
@@ -482,6 +491,10 @@ function showMain(){
   login.style.display = 'none';
   home.style.display = 'none';
   main.style.display = 'flex';
+  // show top-right controls on main
+  if(howBtn) howBtn.style.display = '';
+  if(fullBtn) fullBtn.style.display = '';
+  if(settingsBtn) settingsBtn.style.display = '';
   updateOpenLobbyBtnVisibility();
   updateNickEditable();
 }
@@ -1548,30 +1561,61 @@ function linkify(text){
   });
 }
 
-function scrollChatToBottom(instant = true){
-  try{
-    if(instant) chat.scrollTop = chat.scrollHeight;
-    else chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
-    updateScrollBtnVisibility();
-  }catch(e){}
-}
-
-/* scroll button logic */
-function updateScrollBtnVisibility(){
-  const atBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 60;
-  if(!atBottom) scrollBottomBtn.style.display = 'block';
-  else scrollBottomBtn.style.display = 'none';
-}
-chat.addEventListener('scroll', updateScrollBtnVisibility);
-scrollBottomBtn.addEventListener('click', ()=> scrollChatToBottom(false));
-
-/* notification helper */
-document.addEventListener('visibilitychange', ()=> {
-  if(!document.hidden) lastMessageTime = Date.now();
+/* =========================
+   NEW: Login / Demo handlers
+   ========================= */
+loginBtn.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const u = (loginUser.value || '').trim();
+  const p = loginPass.value || '';
+  if(!u || !p){
+    alert('Please enter username and password.');
+    return;
+  }
+  users = JSON.parse(localStorage.getItem('users')||'{}');
+  // existing user -> check password
+  if(users[u]){
+    if(users[u].pass !== p){
+      alert('Wrong password.');
+      return;
+    }
+    // success login
+  } else {
+    // register new user locally (confirm)
+    if(!confirm(`Register new user "${u}"?`)) return;
+    users[u] = { pass: p, color: localStorage.getItem('nickColor') || '#58a6ff', joined: Date.now() };
+    localStorage.setItem('users', JSON.stringify(users));
+    // create Firestore user doc (best-effort)
+    try{
+      await setDoc(doc(db,'users',u), { color: users[u].color, joined: serverTimestamp() });
+    }catch(err){ /* ignore firestore errors */ }
+  }
+  // set session and nick
+  localStorage.setItem('session', u);
+  localStorage.setItem('nick', u);
+  localStorage.setItem('nickColor', (users[u] && users[u].color) || '#58a6ff');
+  nickInput.value = u;
+  nickColorInput.value = localStorage.getItem('nickColor');
+  nickColorCircle.style.background = localStorage.getItem('nickColor');
+  showHome();
 });
 
-/* ensure nick editability on load */
-updateNickEditable();
+demoBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  const g = 'Guest' + Math.floor(Math.random()*9000 + 1000);
+  localStorage.setItem('session', g);
+  localStorage.setItem('nick', g);
+  const guestColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
+  localStorage.setItem('nickColor', guestColor);
+  nickInput.value = g;
+  nickColorInput.value = guestColor;
+  nickColorCircle.style.background = guestColor;
+  showHome();
+});
+
+/* =========================
+   End of file
+   ========================= */
 
 </script>
 </body>
