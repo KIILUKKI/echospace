@@ -79,12 +79,13 @@
 #chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,transparent, rgba(255,255,255,0.01));transition:padding-bottom 120ms ease}
 .message{display:flex;gap:10px;align-items:flex-start}
 .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000}
-.msg{background:var(--panel);padding:10px 14px;border-radius:12px;position:relative;max-width:70%}
-.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
+/* Reserve horizontal space on the right for action buttons (reply & more) so they don't overlap message text */
+.msg{background:var(--panel);padding:10px 96px 10px 14px;border-radius:12px;position:relative;max-width:70%}
+.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:calc(100% - 96px);}
 .time{font-size:11px;color:var(--muted);margin-left:6px}
-.reply-btn{position:absolute;right:8px;top:8px;font-size:12px;color:var(--muted);cursor:pointer;opacity:0}
+.reply-btn{position:absolute;right:52px;top:8px;font-size:12px;color:var(--muted);cursor:pointer;opacity:0}
 .msg:hover .reply-btn{opacity:1}
-.reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px}
+.reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px;max-width:calc(100% - 96px);}
 
 /* edited note */
 .edited-note{font-size:12px;color:var(--muted);margin-left:8px}
@@ -102,8 +103,8 @@
 #emojiPicker .tabbtn.active{background:rgba(255,255,255,0.03)}
 #emojiPicker div.emoji{cursor:pointer;font-size:18px}
 
-/* MORE (three-dots) button next to reply */
-.more-btn{position:absolute;right:44px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px}
+/* MORE (three-dots) button next to reply — positioned at the far right (z-axis on top) */
+.more-btn{position:absolute;right:12px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px;z-index:12}
 .msg:hover .more-btn{opacity:1}
 
 /* mobile specifics */
@@ -269,6 +270,7 @@
    - Tyyppi-ilmoitus korjattu ja lokalisoitu (suomi)
    - Oikean klikin valikko (dropdown) lisätty oman viestin edit/delete:ksi
    - lisätty kolmipiste-painike (⋯) omaan viestiin, joka avaa saman Edit/Delete -valikon (korvaa oikea-klikki)
+   - varattu oikea tila painikkeille estämään päällekkäisyyttä Edited/reply-tekstin kanssa
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
