@@ -102,6 +102,10 @@
 #emojiPicker .tabbtn.active{background:rgba(255,255,255,0.03)}
 #emojiPicker div.emoji{cursor:pointer;font-size:18px}
 
+/* MORE (three-dots) button next to reply */
+.more-btn{position:absolute;right:44px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px}
+.msg:hover .more-btn{opacity:1}
+
 /* mobile specifics */
 .mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;display:none;transition:background var(--drawer-duration) var(--drawer-ease)}
 .mobile-overlay.show{display:block;background:rgba(0,0,0,0.45)}
@@ -109,25 +113,7 @@
 .mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
 #openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 
-/* collapsed small labels */
-.collapsed .label-text{display:none}
-.collapsed .room{padding:8px;border-radius:8px;text-align:center}
-
-/* responsive */
-@media (max-width:900px){:root{--lobby-width:220px}}
-@media (max-width:768px){
-#home{flex-direction:column}
-#homeLeft{display:none} /* desktop lobby hidden on mobile (we use drawer) */
-#chatSidebar{display:none}
-#header{padding:10px}
-#nickRow{max-width:100%}
-.reply-btn{display:none}
-}
-
-.fade{transition:opacity 180ms ease,transform 180ms ease}
-button, .iconbtn{outline: none}
-
-/* scroll to bottom button centered */
+/* Floating scroll to bottom button (now centered) */
 #scrollBottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
 
 /* simple tooltip for seen receipts */
@@ -282,6 +268,7 @@ button, .iconbtn{outline: none}
    - kevyempi näkyvyyden/scrollin hallinta
    - Tyyppi-ilmoitus korjattu ja lokalisoitu (suomi)
    - Oikean klikin valikko (dropdown) lisätty oman viestin edit/delete:ksi
+   - lisätty kolmipiste-painike (⋯) omaan viestiin, joka avaa saman Edit/Delete -valikon (korvaa oikea-klikki)
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -711,6 +698,23 @@ function makeMessageElement(id, m){
     </div>
   `;
 
+  // Add the three-dot MORE button for own messages (replaces right-click)
+  const localNick = localStorage.getItem('nick') || nick;
+  if(m.name === localNick){
+    const msgInner = el.querySelector('.msg');
+    const moreBtn = document.createElement('div');
+    moreBtn.className = 'more-btn';
+    moreBtn.title = 'More';
+    moreBtn.textContent = '⋯';
+    moreBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const rect = moreBtn.getBoundingClientRect();
+      // show the same context menu but positioned near the button
+      showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text);
+    });
+    msgInner.appendChild(moreBtn);
+  }
+
   // attach interactions
   const senderEl = el.querySelector('.msg-sender');
   if(senderEl){
@@ -776,13 +780,6 @@ function makeMessageElement(id, m){
   });
   el.addEventListener('mouseleave', ()=>{ tooltip.style.display = 'none'; tooltip.setAttribute('aria-hidden','true'); });
 
-  // context menu (desktop) only for own messages
-  el.addEventListener('contextmenu', (ev)=>{
-    if((m.name !== (localStorage.getItem('nick')||nick))) return;
-    ev.preventDefault();
-    showEditDeleteMenu(ev.clientX, ev.clientY, id, m.text);
-  });
-
   // attach mobile interactions including swipe-to-reply and long-press edit/delete
   attachMobileInteractions(el, id, m);
 
@@ -822,6 +819,26 @@ function updateMessage(id, m){
   const replyPrev = el.querySelector('.reply-preview');
   if(replyPrev && !m.reply) replyPrev.remove();
   else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', replyHtml);
+
+  // ensure more-btn exists for own messages
+  const localNick = localStorage.getItem('nick') || nick;
+  const hasMore = !!el.querySelector('.more-btn');
+  if(m.name === localNick && !hasMore){
+    const msgInner = el.querySelector('.msg');
+    const moreBtn = document.createElement('div');
+    moreBtn.className = 'more-btn';
+    moreBtn.title = 'More';
+    moreBtn.textContent = '⋯';
+    moreBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const rect = moreBtn.getBoundingClientRect();
+      showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text);
+    });
+    msgInner.appendChild(moreBtn);
+  } else if(m.name !== localNick && hasMore){
+    const mb = el.querySelector('.more-btn');
+    if(mb) mb.remove();
+  }
 }
 
 function removeMessage(id){
@@ -829,7 +846,7 @@ function removeMessage(id){
   if(el) el.remove();
 }
 
-/* context menu implementation (dropdown on right-click) */
+/* context menu implementation (dropdown on three-dots / replaced right-click) */
 function showEditDeleteMenu(x,y,msgId, currentText){
   contextMenu.innerHTML = '';
   // Edit
