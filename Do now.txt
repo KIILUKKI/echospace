@@ -1,14 +1,12 @@
-Online / offline / last seen (Valikko  käyttäjistä (ei guesteja) oikealta avattavissa) niinkuin dc.
+Online / offline / last seen (Valikko  käyttäjistä (ei guesteista) oikealta avattavissa) niinkuin dc.
 
-Guestille eri badge (👻 Guest) 
+Profiilikortti (klikkaa nimeä → väri, liittynyt, viestien määrä) "Lobbyn yläosassa oikealla oleva avattava dropdown valikko. Myös nähtävissä kun painaa nimeä kerran."
 
-Profiilikortti (klikkaa nimeä → väri, liittynyt, viestien määrä) "Lobbyn yläosassa oikealla oleva avattava dropdown valikko."
+Viestin muokkaus (oma viesti → “edit”) + Viestin poistaminen (vain omat) Painamalla mobiililla pitkään pohjassa - Desktopissa right clickaamalla tulee vaihtoehdot haluaako poistaa viestin tai muokata sitä.
 
-Viestin muokkaus (oma viesti → “edit”) + Viestin poistaminen (vain omat)   Pianmalla mobiililla pitkään pohjassa - Desktopissa right clickaamalla tulee vaihtoehdot haluaako poistaa viestin tai muokata sitä.
+Swipe reply (vedä viestiä → reply) (vain moiililla otetaanmobiililla siis reply nappi pois).
 
-Swipe reply (vedä viestiä → reply) (moiililla).
-
-Floating “scroll to bottom” -nappi Mobiililla ja desktopilla.
+Floating “scroll to bottom” -nappi Mobiililla sekä desktopilla.
 
 Komennot:
 /roll
