@@ -22,19 +22,52 @@
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
   #app{width:100%;height:100%;position:relative;overflow:hidden}
 
-/* HOW / FULL / SETTINGS (top-right) */
-#howBtn{position:fixed;top:12px;right:52px;background:transparent;border:0;color:var(--text);font-size:14px;padding:8px;border-radius:8px;cursor:pointer;z-index:94}
-#howBtn:hover{background:rgba(255,255,255,0.02)}
-#fullBtn{position:fixed;top:12px;right:36px;background:transparent;border:0;color:var(--text);font-size:16px;padding:8px;border-radius:8px;cursor:pointer;z-index:93}
-#fullBtn:hover{background:rgba(255,255,255,0.02)}
-#settingsBtn{position:fixed;top:12px;right:12px;background:transparent;border:0;color:var(--text);font-size:20px;padding:10px;border-radius:10px;cursor:pointer;z-index:92}
-.settings-menu{position:fixed;top:52px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:8px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:91}
+/* TOP-RIGHT CONTROLS: container to avoid overlapping */
+#topRightControls{
+  position:fixed;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  z-index:120; /* high so menus appear below but above main UI */
+  pointer-events:auto;
+}
+
+/* HOW / FULL / SETTINGS (buttons inside container) */
+#howBtn, #fullBtn, #settingsBtn{
+  background:transparent;
+  border:0;
+  color:var(--text);
+  font-size:14px;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+  min-width:40px;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+#howBtn:hover, #fullBtn:hover, #settingsBtn:hover{ background:rgba(255,255,255,0.02) }
+
+/* Make fullscreen button slightly larger / more prominent */
+#fullBtn{
+  font-size:15px;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:600;
+}
+
+/* SETTINGS MENU & HOW MENU anchored under container (aligned to right) */
+.settings-menu{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:8px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:119}
 .settings-menu.show{display:block}
 .settings-menu button{display:block;width:100%;padding:8px 12px;background:transparent;border:0;color:var(--text);text-align:left;border-radius:8px;cursor:pointer}
 .settings-menu button:hover{background:rgba(255,255,255,0.03)}
 
-/* HOW TO PANEL (left of settings) */
-.how-menu{position:fixed;top:52px;right:52px;width:360px;max-height:60vh;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.6);display:none;z-index:95;overflow:auto}
+.how-menu{position:fixed;top:56px;right:12px;width:360px;max-height:60vh;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.6);display:none;z-index:121;overflow:auto}
 .how-menu.show{display:block}
 .how-menu h3{margin:0 0 8px 0;font-size:15px}
 .how-menu .section{margin-bottom:10px;font-size:13px;color:var(--muted)}
@@ -43,7 +76,7 @@
 .how-menu .close-how:hover{background:rgba(255,255,255,0.02)}
 
 /* PROFILE CARD */
-.profile-card{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:92;width:220px}
+.profile-card{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:118;width:220px}
 .profile-card.show{display:block}
 .profile-card .row{display:flex;justify-content:space-between;margin-bottom:6px}
 
@@ -168,13 +201,16 @@
 <body>
 <div id="app">
 
-  <!-- HOW TO button (left of settings gear) -->
-  <button id="howBtn" title="How To">How To</button>
-  <!-- FULLSCREEN button (between How To and Settings) -->
-  <button id="fullBtn" title="Toggle fullscreen">⤢</button>
+  <!-- TOP-RIGHT CONTROLS CONTAINER -->
+  <div id="topRightControls" aria-hidden="false">
+    <!-- HOW TO button -->
+    <button id="howBtn" title="How To">How To</button>
+    <!-- FULLSCREEN button -->
+    <button id="fullBtn" title="Toggle fullscreen" aria-label="Fullscreen">⤢</button>
+    <!-- SETTINGS GEAR -->
+    <button id="settingsBtn" title="Settings">⚙️</button>
+  </div>
 
-  <!-- SETTINGS GEAR -->
-  <button id="settingsBtn" title="Settings">⚙️</button>
   <div id="settingsMenu" class="settings-menu" aria-hidden="true">
     <button id="settingsLogout">Logout</button>
     <button id="settingsDelete">Delete user</button>
@@ -346,11 +382,10 @@
 <script type="module">
 /* ===================
    Minimal, targeted changes:
-   - Arrow Up (↑) edits last message (desktop) when input is empty.
-   - Remove three-dots "more" button on mobile; keep long-press showing same Edit/Delete menu.
-   - Add fullscreen toggle button between How To and Settings.
-   - Keep other behavior unchanged.
-   - Added: login / demo handlers and hide top buttons on login view.
+   - Buttons at top-right grouped in #topRightControls to avoid overlapping.
+   - Fullscreen button made slightly larger visually.
+   - Menu panels (howMenu, settingsMenu, profileCard) aligned to right:12px so they appear under the container.
+   - No other feature changes.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
