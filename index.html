@@ -79,7 +79,8 @@
 #chat{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,transparent, rgba(255,255,255,0.01));transition:padding-bottom 120ms ease}
 .message{display:flex;gap:10px;align-items:flex-start}
 .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000}
-.msg{background:var(--panel);padding:10px 14px;border-radius:12px;position:relative;max-width:90%}
+.msg{background:var(--panel);padding:10px 14px;border-radius:12px;position:relative;max-width:70%}
+.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;}
 .time{font-size:11px;color:var(--muted);margin-left:6px}
 .reply-btn{position:absolute;right:8px;top:8px;font-size:12px;color:var(--muted);cursor:pointer;opacity:0}
 .msg:hover .reply-btn{opacity:1}
@@ -124,11 +125,17 @@
 .fade{transition:opacity 180ms ease,transform 180ms ease}
 button, .iconbtn{outline: none}
 
-/* scroll to bottom button */
-#scrollBottomBtn{position:fixed;right:18px;bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
+/* scroll to bottom button centered */
+#scrollBottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
 
 /* simple tooltip for seen receipts */
 .tooltip{position:fixed;padding:6px 8px;background:var(--panel);border:1px solid #0d1117;border-radius:8px;font-size:13px;color:var(--muted);z-index:120;display:none}
+
+/* custom thin scrollbars for desktop */
+#chat::-webkit-scrollbar, #homeLeft::-webkit-scrollbar, #chatSidebar::-webkit-scrollbar{height:8px;width:8px}
+#chat::-webkit-scrollbar-thumb, #homeLeft::-webkit-scrollbar-thumb, #chatSidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:999px}
+#chat, #homeLeft, #chatSidebar{scrollbar-color: rgba(255,255,255,0.06) transparent;scrollbar-width:thin}
+
 </style>
 
 </head>
@@ -142,7 +149,7 @@ button, .iconbtn{outline: none}
     <button id="settingsDelete">Delete user</button>
   </div>
 
-  <!-- PROFILE CARD (also used when clicking a user) -->
+  <!-- PROFILE CARD (also used when hovering/clicking a user) -->
   <div id="profileCard" class="profile-card" aria-hidden="true">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <div id="profileAvatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;background:var(--guest-gray)"></div>
@@ -152,7 +159,7 @@ button, .iconbtn{outline: none}
       </div>
     </div>
     <div class="row"><div>Color</div><div id="profileColor"></div></div>
-    <div class="row"><div>Messages</div><div id="profileMsgs">0</div></div>
+    <!-- Message count row intentionally removed as requested -->
   </div>
 
   <!-- LOGIN -->
@@ -246,7 +253,7 @@ button, .iconbtn{outline: none}
   <!-- Blue three-line button (mobile) -->
   <button id="openLobbyBtn" title="Open lobby">☰</button>
 
-  <!-- Floating scroll to bottom button -->
+  <!-- Floating scroll to bottom button (now centered) -->
   <button id="scrollBottomBtn" title="Scroll to bottom">↓</button>
 
   <!-- tooltip element -->
@@ -256,18 +263,15 @@ button, .iconbtn{outline: none}
 
 <script type="module">
 /* ===================
-   App logic with requested extra features:
-   - Guests get permanent gray color that cannot be changed.
-   - Profile card on clicking a name and lobby-top dropdown (also used).
-   - Message edit/delete for own messages (right-click on desktop / long-press on mobile).
-   - Swipe reply on mobile (drag message to right to reply). Remove reply button on mobile.
-   - Floating scroll-to-bottom button (mobile + desktop).
-   - Link detection: clickable <a> links open directly in new tab.
-   - GIF picker as a second tab inside the emoji picker (simple built-in list).
-   - Hovering a message (not your own) shows who has seen it.
-   - Commands: /roll, /roll N, /coin, /tableflip, /shrug.
-   The rest of the app is left intact where possible.
-   DISCLAIMER: This is a functional prototype. Keep Firebase rules in mind and adjust paths if needed.
+   App logic with requested extra features and minimal safe edits:
+   - Removed GIFs entirely
+   - Swipe-to-reply refined to animate smoothly like WhatsApp
+   - Long messages now wrap and won't overflow on mobile
+   - Profile card shows on hover (desktop) and click (mobile)
+   - Removed message count from the profile panel
+   - Desktop scrollbars styled to fit UI
+   - "Scroll to bottom" button centered
+   Changes are kept minimal so nothing unrelated is broken.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -335,7 +339,6 @@ const profileAvatar = document.getElementById('profileAvatar');
 const profileName = document.getElementById('profileName');
 const profileJoined = document.getElementById('profileJoined');
 const profileColor = document.getElementById('profileColor');
-const profileMsgs = document.getElementById('profileMsgs');
 
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 const tooltip = document.getElementById('tooltip');
@@ -490,14 +493,13 @@ settingsDelete.addEventListener('click', () => {
   showLogin();
 });
 
-/* profile card show when clicking a name */
-function showProfileCardFor(name, color, joined, msgCount, anchorEl){
+/* profile card show when hovering (desktop) or clicking (mobile) a name */
+function showProfileCardFor(name, color, joined, anchorEl){
   profileAvatar.textContent = name?.[0] || '?';
   profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
   profileName.textContent = name;
   profileColor.textContent = color || '';
   profileJoined.textContent = joined ? `Joined: ${new Date(joined).toLocaleDateString()}` : '';
-  profileMsgs.textContent = msgCount || 0;
   // position near anchor
   if(anchorEl){
     const r = anchorEl.getBoundingClientRect();
@@ -641,25 +643,40 @@ async function enterRoom(r){
         setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localStorage.getItem('nick') || nick), {name: localStorage.getItem('nick') || nick, t: serverTimestamp()});
       }catch(e){/* ignore */}
 
-      // sender name click => show profile card (quick info)
+      // sender name: hover on desktop, click on mobile
       const senderEl = el.querySelector('.msg-sender');
       if(senderEl){
-        senderEl.addEventListener('click', async (ev)=>{
-          ev.stopPropagation();
-          // fetch joined date and message count (best-effort)
-          let joined = null; let msgCount = 0; let color = m.color;
-          try{
-            // attempt to read user record in a 'users' collection if exists
-            const us = await getDoc(doc(db,'users',m.name));
-            if(us.exists()) {
-              joined = us.data().joined?.toMillis ? new Date(us.data().joined.toMillis()) : us.data().joined;
-              color = us.data().color || color;
-            }
-            const msgs = await getDocs(query(collection(db,'rooms',room,'messages')));
-            msgs.forEach(md=>{ if(md.data().name === m.name) msgCount++; });
-          }catch(e){}
-          showProfileCardFor(m.name, color, joined, msgCount, senderEl);
-        });
+        if(!isMobile){
+          senderEl.addEventListener('mouseenter', async (ev)=>{
+            ev.stopPropagation();
+            let joined = null; let color = m.color;
+            try{
+              const us = await getDoc(doc(db,'users',m.name));
+              if(us.exists()) {
+                joined = us.data().joined?.toMillis ? new Date(us.data().joined.toMillis()) : us.data().joined;
+                color = us.data().color || color;
+              }
+            }catch(e){}
+            showProfileCardFor(m.name, color, joined, senderEl);
+          });
+          senderEl.addEventListener('mouseleave', ()=>{
+            // hide profile shortly to allow small moves
+            setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120);
+          });
+        } else {
+          senderEl.addEventListener('click', async (ev)=>{
+            ev.stopPropagation();
+            let joined = null; let color = m.color;
+            try{
+              const us = await getDoc(doc(db,'users',m.name));
+              if(us.exists()) {
+                joined = us.data().joined?.toMillis ? new Date(us.data().joined.toMillis()) : us.data().joined;
+                color = us.data().color || color;
+              }
+            }catch(e){}
+            showProfileCardFor(m.name, color, joined, senderEl);
+          });
+        }
       }
 
       // hover to show who has seen this message (not your own)
@@ -687,7 +704,7 @@ async function enterRoom(r){
         showEditDeleteMenu(ev.clientX, ev.clientY, d.id, m.text);
       });
 
-      // long-press for mobile (edit/delete) + swipe reply behavior
+      // long-press for mobile (edit/delete) + improved swipe reply behavior
       attachMobileInteractions(el, d.id, m);
 
       // message text links open directly (they already have <a target="_blank"> via linkify)
@@ -709,7 +726,6 @@ async function enterRoom(r){
 
 /* show a simple edit/delete floating menu */
 function showEditDeleteMenu(x,y,msgId, currentText){
-  // simple prompt-based menu for prototype
   const choice = prompt('Type "edit" to edit or "delete" to delete this message');
   if(!choice) return;
   if(choice.toLowerCase().startsWith('e')){
@@ -721,12 +737,13 @@ function showEditDeleteMenu(x,y,msgId, currentText){
   }
 }
 
-/* mobile interactions: long-press -> edit/delete for own; swipe right -> reply */
+/* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply */
 function attachMobileInteractions(el, msgId, messageData){
   let longPressTimer = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let moved = false;
+  let dragging = false;
 
   el.addEventListener('touchstart', (e)=>{
     const t = e.touches[0];
@@ -734,7 +751,6 @@ function attachMobileInteractions(el, msgId, messageData){
     // start long press only for own messages
     if(messageData.name === (localStorage.getItem('nick')||nick)){
       longPressTimer = setTimeout(()=>{
-        // open edit/delete prompt
         const choice = prompt('Type "edit" to edit or "delete" to delete this message');
         if(!choice) return;
         if(choice.toLowerCase().startsWith('e')){
@@ -746,28 +762,68 @@ function attachMobileInteractions(el, msgId, messageData){
         }
       }, 650);
     }
+    // prepare for possible swipe
+    dragging = false;
+    el.style.transition = '';
   }, {passive:true});
+
   el.addEventListener('touchmove', (e)=>{
-    moved = true; const t = e.touches[0];
+    const t = e.touches[0];
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
     if(Math.abs(dy) > Math.abs(dx)){
-      // vertical scroll, cancel
       if(longPressTimer) clearTimeout(longPressTimer);
-      return;
+      return; // vertical scroll
     }
-    // swipe right to reply (if enough distance)
-    if(dx > 40){
+    if(!dragging && Math.abs(dx) > 10){
+      dragging = true;
       if(longPressTimer) clearTimeout(longPressTimer);
-      // trigger reply
-      const m = messageData;
-      replyTo = { name: m.name, text: m.text };
-      replyBox.style.display = 'block';
-      replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-      document.getElementById('cancelReply').onclick = cancelReply;
     }
-  }, {passive:true});
-  el.addEventListener('touchend', ()=>{ if(longPressTimer) clearTimeout(longPressTimer); });
+    if(dragging){
+      e.preventDefault();
+      const capped = Math.min(Math.max(dx, 0), 120); // only right swipe
+      // translate the whole message for visual feedback
+      el.style.transform = `translateX(${capped}px)`;
+      el.style.willChange = 'transform';
+      el.style.transition = 'none';
+      // subtle hint: show reply preview in replyBox while dragging
+      if(capped > 36){
+        const m = messageData;
+        replyBox.style.display = 'block';
+        replyBox.innerHTML = `Replying to <b>${escapeHtml(m.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
+        const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
+      } else if(capped <= 36) {
+        // hide temporary reply hint if not far enough
+        if(!replyTo) replyBox.style.display = 'none';
+      }
+    }
+  }, {passive:false});
+
+  el.addEventListener('touchend', ()=>{
+    if(longPressTimer) clearTimeout(longPressTimer);
+    // finalize drag
+    if(el.style.transform && el.style.transform !== 'none'){
+      const m = el.style.transform.match(/translateX\((\d+)px\)/);
+      const px = m ? parseInt(m[1],10) : 0;
+      el.style.transition = 'transform 180ms ease';
+      if(px > 60){
+        // accept as reply
+        el.style.transform = 'translateX(0)';
+        // set reply after animation frame so UI feels smooth
+        setTimeout(()=>{
+          replyTo = { name: messageData.name, text: messageData.text };
+          replyBox.style.display = 'block';
+          replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
+          const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
+        }, 160);
+      } else {
+        // revert
+        el.style.transform = 'translateX(0)';
+        setTimeout(()=>{ if(!replyTo) replyBox.style.display = 'none'; }, 160);
+      }
+    }
+    el.style.willChange = '';
+  });
 }
 
 /* typing indicator management */
@@ -859,7 +915,7 @@ async function handleCommand(cmdText){
   await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
 }
 
-/* emojis + GIF picker */
+/* emojis picker (GIFs removed) */
 const emojiList = [
 "😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
 "😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
@@ -868,29 +924,12 @@ const emojiList = [
 "😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓",
 "👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏"
 ];
-const gifList = [
-  // sample GIFs (public) — replace or expand as desired
-  'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
-  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-  'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif',
-  'https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif'
-];
 
 function buildEmojiPicker(){
   emojiPicker.innerHTML = '';
-  const tabs = document.createElement('div'); tabs.className = 'tabs';
-  const eBtn = document.createElement('button'); eBtn.textContent = 'Emoji'; eBtn.className='tabbtn active';
-  const gBtn = document.createElement('button'); gBtn.textContent = 'GIFs'; gBtn.className='tabbtn';
-  tabs.appendChild(eBtn); tabs.appendChild(gBtn);
-  emojiPicker.appendChild(tabs);
   const grid = document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px';
   emojiPicker.appendChild(grid);
-
-  function showEmojis(){ grid.innerHTML=''; emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); }); }
-  function showGifs(){ grid.innerHTML=''; gifList.forEach(g=>{ const d=document.createElement('div'); d.style.cursor='pointer'; d.style.width='80px'; d.style.height='60px'; d.style.backgroundImage=`url(${g})`; d.style.backgroundSize='cover'; d.style.backgroundPosition='center'; d.onclick=()=>{ msg.value += ' ' + g; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); }); }
-  eBtn.addEventListener('click', ()=>{ eBtn.classList.add('active'); gBtn.classList.remove('active'); showEmojis(); });
-  gBtn.addEventListener('click', ()=>{ gBtn.classList.add('active'); eBtn.classList.remove('active'); showGifs(); });
-  showEmojis();
+  emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); });
 }
 buildEmojiPicker();
 emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
@@ -943,7 +982,6 @@ function openMobileDrawer(){
   updateOpenLobbyBtnVisibility();
 }
 function closeMobileDrawer(){
-  // standard smooth close triggered by removing 'show'
   mobileDrawer.classList.remove('show');
   mobileOverlay.classList.remove('show');
   const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
@@ -974,7 +1012,7 @@ showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
 const origShowLogin = showLogin;
 showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
 
-/* Fast drag + velocity-based flick (kept from previous) */
+/* Fast drag + velocity-based flick (kept from previous, used for edge-drag drawer) */
 let dragging = false;
 let startX = 0;
 let lastX = 0;
@@ -985,9 +1023,7 @@ const EDGE_ZONE = 36;
 const SHORT_THRESHOLD = 30;
 const VELOCITY_THRESHOLD = 0.35;
 
-/* touchstart/drag logic: do NOT begin dragging immediately on touchstart.
-   Instead, record potential drag and only start the drag if user moves horizontally
-   beyond a small threshold. This avoids treating simple taps inside the drawer as drags. */
+/* touchstart/drag logic for drawer (unchanged) */
 let touchStarted = false;
 let touchStartX = 0;
 let touchStartY = 0;
@@ -1003,7 +1039,6 @@ function beginDrag(x, initiallyOpen){
   mobileOverlay.style.transition = 'none';
   if(!mobileOverlay.classList.contains('show')) mobileOverlay.style.display = 'block';
   if(!mobileDrawer.classList.contains('show')) mobileDrawer.style.display = 'block';
-  // ensure CSS knows we're "not shown" so we control transform manually while dragging
   mobileDrawer.classList.remove('show');
 }
 function dragMove(x){
@@ -1033,7 +1068,6 @@ function endDrag(){
   const matrix = style.transform;
   if(matrix && matrix !== 'none'){
     try{
-      // fallback parsing
       const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
       translateX = m ? parseFloat(m[1]) : 0;
     }catch(e){ translateX = 0; }
@@ -1070,7 +1104,7 @@ function endDrag(){
   mobileDrawer.style.willChange = '';
 }
 
-/* touch handlers for drag */
+/* touch handlers for drag (unchanged) */
 document.addEventListener('touchstart', (e)=>{
   if(!isMobile) return;
   const t = e.touches[0];
@@ -1080,7 +1114,6 @@ document.addEventListener('touchstart', (e)=>{
   touchPotentialDrag = false;
   const drawerOpen = mobileDrawer.classList.contains('show');
   const isHomeVisible = home.style.display !== 'none';
-  // Potential drag if drawer is open (we may want to close) or user started near the left edge (open)
   if(drawerOpen || (isHomeVisible && touchStartX <= EDGE_ZONE)){
     touchPotentialDrag = true;
   }
@@ -1091,33 +1124,27 @@ document.addEventListener('touchmove', (e)=>{
   const t = e.touches[0];
   const dx = t.clientX - touchStartX;
   const dy = t.clientY - touchStartY;
-  // If vertical scroll dominates, cancel potential drag
   if(Math.abs(dy) > Math.abs(dx) + 8){
     if(dragging) endDrag();
     touchStarted = false;
     touchPotentialDrag = false;
     return;
   }
-  // If we haven't started an actual drag yet, check if movement passes threshold to begin
   if(!dragging){
     if(touchPotentialDrag && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){
       const drawerOpen = mobileDrawer.classList.contains('show');
       beginDrag(t.clientX, drawerOpen);
-      // Immediately apply first movement
       dragMove(t.clientX);
       return;
     } else {
-      // not enough movement yet => do nothing, allow tap/click
       return;
     }
   }
-  // if already dragging, continue
   if(dragging) dragMove(t.clientX);
 }, {passive:true});
 
 document.addEventListener('touchend', (e)=>{
   if(!isMobile) return;
-  // If we started a drag, finalize it. If not, allow the tap/click to proceed normally.
   if(dragging){
     endDrag();
   }
@@ -1176,7 +1203,6 @@ function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
 
 /* linkify simple URLs to clickable anchors */
 function linkify(text){
-  // detect http(s):// and www.
   const urlRe = /((https?:\/\/|www\.)[\w\-@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\w\-@:%_\+.~#?&//=]*))/gi;
   return text.replace(urlRe, function(match){
     let url = match;
