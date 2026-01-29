@@ -179,7 +179,7 @@
 .mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
 #openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 
-/* Floating scroll to bottom button (now centered) */
+/* Floating scroll to bottom button (centered) */
 #scrollBottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
 
 /* simple tooltip for seen receipts */
@@ -260,8 +260,8 @@
       • Hover interactions show profile and seen receipts.</div>
 
     <div class="section"><b>Account notes</b><br>
-      • Login/Register stores credentials locally (for demo). Guests are labeled "Guest####".<br>
-      • Settings gear lets you logout or delete your account (local storage + optional cloud doc removal).</div>
+      • Login/Register stores credentials in Firestore (hashed). Use same account from multiple devices.<br>
+      • Settings gear lets you logout or delete your account (removes Firestore doc).</div>
 
     <button id="closeHow" class="close-how">Close</button>
   </div>
@@ -381,11 +381,10 @@
 
 <script type="module">
 /* ===================
-   Minimal, targeted changes:
-   - Buttons at top-right grouped in #topRightControls to avoid overlapping.
-   - Fullscreen button made slightly larger visually.
-   - Menu panels (howMenu, settingsMenu, profileCard) aligned to right:12px so they appear under the container.
-   - No other feature changes.
+   Changes in this version:
+   - Login uses Firestore user docs (password saved as SHA-256 hash) so same account can be used across devices.
+   - Scroll-to-bottom button behavior implemented and shows when user is not at bottom.
+   - Otherwise minimal, targeted changes only.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -462,7 +461,6 @@ const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 const tooltip = document.getElementById('tooltip');
 const contextMenu = document.getElementById('contextMenu');
 
-let users = JSON.parse(localStorage.getItem('users')||'{}');
 let nick = '';
 let nickColor = localStorage.getItem('nickColor')||'#58a6ff';
 let room = '';
@@ -630,10 +628,7 @@ settingsDelete.addEventListener('click', async () => {
   if(session.startsWith('Guest')){ alert('Guest account cannot be deleted.'); return; }
   if(!confirm(`Delete user "${session}" and their stored credentials? This cannot be undone.`)) return;
   try{
-    users = JSON.parse(localStorage.getItem('users')||'{}');
-    delete users[session];
-    localStorage.setItem('users', JSON.stringify(users));
-    // remove Firestore user doc if you want (optional)
+    // delete Firestore user doc
     await deleteDoc(doc(db,'users',session)).catch(()=>{});
   }catch(e){}
   localStorage.removeItem('session');
@@ -773,7 +768,12 @@ async function enterRoom(r){
         removeMessage(d.id);
       }
     });
-    if(shouldScroll) scrollChatToBottom();
+    if(shouldScroll) {
+      scrollChatToBottom(true);
+    } else {
+      // show scroll button if user is not at bottom
+      scrollBottomBtn.style.display = 'block';
+    }
   });
 
   // typing snapshot (robust handling of timestamp field)
@@ -1262,13 +1262,26 @@ async function handleCommand(cmdText){
 
 /* emojis picker */
 const emojiList = [
-"😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
-"😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
-"🤗","🤭","🤫","🤔","🤨","😐","😑","😶","🙄","😏",
-"😣","😥","😮","😯","😲","😪","😫","🥱","😴","😌",
-"😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓",
-"👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏"
+  // Faces / Expressions
+  "😀","😃","😄","😁","😆","😅","😂","🤣","🙂","🙃","😉","😊","😇",
+  "🥰","😍","🤩","😘","😗","😙","😚","😋","😛","😜","🤪","😝","🤗",
+  "🤭","🤫","🤔","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌",
+  "😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴",
+  "😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯",
+  "😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣",
+  "😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩",
+  
+  // Gestures / Hands
+  "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","👇","☝️",
+  "🫱","🫲","🫰","🤝","🙏","👏","👐","🤲","🙌","💪","🦾","🦵","🦿","🖕","✍️","🤳","💅","🩹",
+  
+  // Food & Drink
+  "🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦",
+  "🥬","🥒","🌶️","🫑","🌽","🥕","🫒","🧄","🧅","🥔","🍠","🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳","🧈","🥞",
+  "🧇","🥓","🥩","🍗","🍖","🦴","🌭","🍔","🍟","🍕","🥪","🥙","🫓","🌮","🌯","🫔","🥗","🥘","🫕","🍝","🍜","🍲",
+  "🍛","🍣","🍱","🥟","🦪","🍤","🍙","🍚","🍘","🍥","🥠","🥡","🦀","💦"
 ];
+
 
 function buildEmojiPicker(){
   emojiPicker.innerHTML = '';
@@ -1597,8 +1610,17 @@ function linkify(text){
 }
 
 /* =========================
-   NEW: Login / Demo handlers
+   NEW: Login (Firestore-backed) and Demo handlers
+   - hashPassword uses SubtleCrypto SHA-256
+   - login registers user in Firestore if not existing (after confirmation)
    ========================= */
+async function hashPassword(p){
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(p));
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 loginBtn.addEventListener('click', async (e) => {
   e.preventDefault();
   const u = (loginUser.value || '').trim();
@@ -1607,32 +1629,44 @@ loginBtn.addEventListener('click', async (e) => {
     alert('Please enter username and password.');
     return;
   }
-  users = JSON.parse(localStorage.getItem('users')||'{}');
-  // existing user -> check password
-  if(users[u]){
-    if(users[u].pass !== p){
-      alert('Wrong password.');
-      return;
+
+  try{
+    const userRef = doc(db,'users',u);
+    const snap = await getDoc(userRef);
+    const pHash = await hashPassword(p);
+
+    if(snap.exists()){
+      const data = snap.data();
+      if(data.passwordHash !== pHash){
+        alert('Wrong password.');
+        return;
+      }
+      // success login
+    } else {
+      // register new user in Firestore (confirm)
+      if(!confirm(`Register new user "${u}"?`)) return;
+      await setDoc(userRef, { passwordHash: pHash, color: localStorage.getItem('nickColor') || '#58a6ff', joined: serverTimestamp() });
     }
-    // success login
-  } else {
-    // register new user locally (confirm)
-    if(!confirm(`Register new user "${u}"?`)) return;
-    users[u] = { pass: p, color: localStorage.getItem('nickColor') || '#58a6ff', joined: Date.now() };
-    localStorage.setItem('users', JSON.stringify(users));
-    // create Firestore user doc (best-effort)
-    try{
-      await setDoc(doc(db,'users',u), { color: users[u].color, joined: serverTimestamp() });
-    }catch(err){ /* ignore firestore errors */ }
+
+    // set session and nick
+    localStorage.setItem('session', u);
+    localStorage.setItem('nick', u);
+    // if Firestore has color then prefer it, else fallback to local color
+    try {
+      const us = await getDoc(doc(db,'users',u));
+      const userData = us.exists() ? us.data() : null;
+      localStorage.setItem('nickColor', (userData && userData.color) || (localStorage.getItem('nickColor') || '#58a6ff'));
+    } catch(e) {
+      localStorage.setItem('nickColor', localStorage.getItem('nickColor') || '#58a6ff');
+    }
+    nickInput.value = u;
+    nickColorInput.value = localStorage.getItem('nickColor');
+    nickColorCircle.style.background = localStorage.getItem('nickColor');
+    showHome();
+  }catch(err){
+    console.error('Login error', err);
+    alert('Login failed (see console).');
   }
-  // set session and nick
-  localStorage.setItem('session', u);
-  localStorage.setItem('nick', u);
-  localStorage.setItem('nickColor', (users[u] && users[u].color) || '#58a6ff');
-  nickInput.value = u;
-  nickColorInput.value = localStorage.getItem('nickColor');
-  nickColorCircle.style.background = localStorage.getItem('nickColor');
-  showHome();
 });
 
 demoBtn.addEventListener('click', (e) => {
@@ -1647,6 +1681,58 @@ demoBtn.addEventListener('click', (e) => {
   nickColorCircle.style.background = guestColor;
   showHome();
 });
+
+/* =========================
+   Scroll-to-bottom behavior
+   - scrollChatToBottom(smooth)
+   - show/hide scroll button based on scroll position
+   ========================= */
+function scrollChatToBottom(smooth = true){
+  try{
+    if(smooth && 'scrollTo' in chat){
+      chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+    } else {
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }catch(e){
+    chat.scrollTop = chat.scrollHeight;
+  }
+  scrollBottomBtn.style.display = 'none';
+}
+
+// show/hide scroll to bottom button when user scrolls
+chat.addEventListener('scroll', () => {
+  const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 160;
+  if(!nearBottom){
+    scrollBottomBtn.style.display = 'block';
+  } else {
+    scrollBottomBtn.style.display = 'none';
+  }
+});
+
+// button click
+scrollBottomBtn.addEventListener('click', () => {
+  scrollChatToBottom(true);
+});
+
+/* rooms refresh polling & snapshot already set up earlier */
+
+/* helpful small wrapper to ensure we scroll on load of messages */
+function ensureAutoScrollOnOpen(){
+  // when opening a room, if chat content is short, scroll; otherwise leave button hidden.
+  setTimeout(()=> {
+    const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 160;
+    if(nearBottom) scrollChatToBottom(false);
+    else scrollBottomBtn.style.display = 'block';
+  }, 120);
+}
+
+/* Call ensureAutoScrollOnOpen after entering a room */
+const origEnterRoom = enterRoom;
+enterRoom = async function(r){
+  await origEnterRoom(r);
+  ensureAutoScrollOnOpen();
+};
 
 /* =========================
    End of file
