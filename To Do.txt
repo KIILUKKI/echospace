@@ -1,0 +1,54 @@
+👤 Käyttäjät & läsnäolo
+
+Online / offline / last seen
+
+User list huoneessa
+
+Guestille eri badge (👻 Guest)
+
+Profiilikortti (klikkaa nimeä → väri, liittynyt, viestien määrä)
+
+Mod / owner -roolit huoneissa
+
+-------------------------------------------------------------------------
+
+Viestin muokkaus (oma viesti → “edit”)
+
+Viestin poistaminen (vain omat / modet)
+
+Reaktiot viesteihin (👍 😂 ❤️ tms.)
+
+Lainaus replyn lisäksi (quote-style, eri UI)
+
+@maininnat → korostus + ilmoitus
+
+Linkkien automaattinen tunnistus (klikattavat URL:t)
+
+-------------------------------------------------------------------------
+
+📱 Mobile & UX-viimeistely
+
+Swipe reply (vedä viestiä → reply)
+
+Haptic feedback (mobiilissa)
+
+Pull to refresh
+
+Floating “scroll to bottom” -nappi
+
+Skeleton loaderit (rooms / messages)
+
+-------------------------------------------------------------------------
+
+/roll
+→ Nick rolled 🎲 4
+
+/roll 2
+→ Nick rolled 🎲 2 + 🎲 6 = 8
+
+
+
+
+
+
+
