@@ -1,5 +1,7 @@
 Online / offline / last seen (Valikko  käyttäjistä (ei guesteista) oikealta avattavissa) niinkuin dc.
 
+Guesteilla permanent harmaa väri mitä ei voi vaihtaa, jotta ne tunnistaa helpommin.
+
 Profiilikortti (klikkaa nimeä → väri, liittynyt, viestien määrä) "Lobbyn yläosassa oikealla oleva avattava dropdown valikko. Myös nähtävissä kun painaa nimeä kerran."
 
 Viestin muokkaus (oma viesti → “edit”) + Viestin poistaminen (vain omat) Painamalla mobiililla pitkään pohjassa - Desktopissa right clickaamalla tulee vaihtoehdot haluaako poistaa viestin tai muokata sitä.
