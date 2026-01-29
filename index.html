@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Chat</title>
+<title>Chat - Korjattu</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -14,7 +14,7 @@
     --card:#21262d;
     --text:#e6edf3;
     --lobby-width:260px;
-    --drawer-duration: 200ms; /* smooth, brisk but not too fast */
+    --drawer-duration: 200ms;
     --drawer-ease: cubic-bezier(.16,.84,.24,1);
     --guest-gray: #9aa0a6;
   }
@@ -33,6 +33,11 @@
 .profile-card{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:92;width:220px}
 .profile-card.show{display:block}
 .profile-card .row{display:flex;justify-content:space-between;margin-bottom:6px}
+
+/* CONTEXT MENU */
+.context-menu{position:fixed;background:var(--panel);border:1px solid #0d1117;padding:6px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.6);display:none;z-index:200}
+.context-menu button{display:block;background:transparent;border:0;color:var(--text);padding:10px 12px;text-align:left;width:160px;border-radius:6px;cursor:pointer}
+.context-menu button:hover{background:rgba(255,255,255,0.03)}
 
 /* LOGIN */
 #login{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;background:var(--bg);z-index:30;padding:20px;}
@@ -114,7 +119,7 @@
 @media (max-width:900px){:root{--lobby-width:220px}}
 @media (max-width:768px){
 #home{flex-direction:column}
-#homeLeft{display:none} /* desktop lobby hidden on mobile (we use drawer) */
+#homeLeft{display:none}
 #chatSidebar{display:none}
 #header{padding:10px}
 #nickRow{max-width:100%}
@@ -136,7 +141,6 @@ button, .iconbtn{outline: none}
 #chat, #homeLeft, #chatSidebar{scrollbar-color: rgba(255,255,255,0.06) transparent;scrollbar-width:thin}
 
 </style>
-
 </head>
 <body>
 <div id="app">
@@ -148,7 +152,7 @@ button, .iconbtn{outline: none}
     <button id="settingsDelete">Delete user</button>
   </div>
 
-  <!-- PROFILE CARD (also used when hovering/clicking a user) -->
+  <!-- PROFILE CARD -->
   <div id="profileCard" class="profile-card" aria-hidden="true">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <div id="profileAvatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;background:var(--guest-gray)"></div>
@@ -160,6 +164,9 @@ button, .iconbtn{outline: none}
     <div class="row"><div>Color</div><div id="profileColor"></div></div>
   </div>
 
+  <!-- CONTEXT MENU -->
+  <div id="contextMenu" class="context-menu" aria-hidden="true"></div>
+
   <!-- LOGIN -->
   <div id="login" aria-hidden="false">
     <input id="loginUser" placeholder="Username" autocomplete="username">
@@ -170,7 +177,6 @@ button, .iconbtn{outline: none}
 
   <!-- HOME -->
   <div id="home">
-    <!-- Desktop lobby (keeps desktop visible) -->
     <aside id="homeLeft" aria-label="Lobby">
       <div id="lobbyHeader">
         <div id="lobbyTitle">Rooms</div>
@@ -182,7 +188,6 @@ button, .iconbtn{outline: none}
       <div id="roomList"></div>
     </aside>
 
-    <!-- Center -->
     <main id="homeCenter">
       <div id="nickRow">
         <input id="nick" placeholder="Nickname (saved)">
@@ -207,8 +212,7 @@ button, .iconbtn{outline: none}
         <div id="roomName">#room</div>
       </div>
       <div style="flex:1"></div>
-      <div style="display:flex;gap:8px;align-items:center">
-      </div>
+      <div style="display:flex;gap:8px;align-items:center"></div>
     </div>
 
     <div id="chatWrapper">
@@ -259,15 +263,7 @@ button, .iconbtn{outline: none}
 </div>
 
 <script type="module">
-/* ===================
-   Korjattu versio:
-   - incremental rendering (docChanges) -> pienempi viive
-   - /clear ja /delete parannettu
-   - replyBox absoluuttinen: ei pomppaa alhaalta
-   - käyttäjän väri tallennetaan Firestoreen users-kokoelmaan
-   - kevyempi näkyvyyden/scrollin hallinta
-   =================== */
-
+/* Korjattu: typing indicator, komennot, ja oikea klikkaus -> dropdown menu. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc, collection,
@@ -275,7 +271,7 @@ import {
   onSnapshot, serverTimestamp, deleteDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* Firebase init - vaihda oma config tarvittaessa */
+/* Firebase init - vaihda oma config jos tarv */
 const firebaseConfig = {
   apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
   projectId:"chat-fc8ef"
@@ -336,30 +332,26 @@ const profileColor = document.getElementById('profileColor');
 
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 const tooltip = document.getElementById('tooltip');
+const contextMenu = document.getElementById('contextMenu');
 
 let users = JSON.parse(localStorage.getItem('users')||'{}');
-let nick = '';
+let nick = localStorage.getItem('nick') || '';
 let nickColor = localStorage.getItem('nickColor')||'#58a6ff';
 let room = '';
 let replyTo = null;
-let lastMessageTime = 0;
 let typingTimeout = null;
 let messagesUnsub = null;
 let typingUnsub = null;
 
-/* cache for user docs to avoid repeated reads */
 const userCache = new Map();
 
-/* Device detection */
 const isTouch = matchMedia('(pointer:coarse)').matches;
 const isMobile = /Mobi|Android|iPhone|iPad|Windows Phone/.test(navigator.userAgent) || isTouch;
 
-/* UI init */
 nickColorInput.value = nickColor;
 nickColorCircle.style.background = nickColor;
-nickInput.value = localStorage.getItem('nick') || '';
+nickInput.value = nick || '';
 
-/* Ensure desktop lobby visible and cannot be collapsed */
 function enforceDesktopLobby(){
   if(!isMobile){
     lobby.style.display = 'block';
@@ -373,965 +365,224 @@ function enforceDesktopLobby(){
 }
 enforceDesktopLobby();
 
-/* Session helpers */
-function showHome(){
-  login.style.display = 'none';
-  home.style.display = 'flex';
-  main.style.display = 'none';
-  updateOpenLobbyBtnVisibility();
-  updateNickEditable();
-}
-function showLogin(){
-  login.style.display = 'flex';
-  home.style.display = 'none';
-  main.style.display = 'none';
-  localStorage.removeItem('session');
-  updateOpenLobbyBtnVisibility();
-  updateNickEditable();
-}
-function showMain(){
-  login.style.display = 'none';
-  home.style.display = 'none';
-  main.style.display = 'flex';
-  updateOpenLobbyBtnVisibility();
-  updateNickEditable();
-}
+function showHome(){ login.style.display='none'; home.style.display='flex'; main.style.display='none'; updateOpenLobbyBtnVisibility(); updateNickEditable(); }
+function showLogin(){ login.style.display='flex'; home.style.display='none'; main.style.display='none'; localStorage.removeItem('session'); updateOpenLobbyBtnVisibility(); updateNickEditable(); }
+function showMain(){ login.style.display='none'; home.style.display='none'; main.style.display='flex'; updateOpenLobbyBtnVisibility(); updateNickEditable(); }
 
-/* restore session */
-if(localStorage.getItem('session')) showHome();
-else showLogin();
+if(localStorage.getItem('session')) showHome(); else showLogin();
 
-/* update whether nickname is editable (guest cannot change) */
 function updateNickEditable(){
   const session = localStorage.getItem('session') || '';
   if(session.startsWith('Guest')){
-    nickInput.readOnly = true;
-    nickColorInput.disabled = true;
-    nickColorCircle.style.pointerEvents = 'none';
-    nickInput.title = "Guest name cannot be changed";
+    nickInput.readOnly = true; nickColorInput.disabled = true; nickColorCircle.style.pointerEvents = 'none'; nickInput.title = "Guest name cannot be changed";
     nickColorInput.value = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
     nickColorCircle.style.background = nickColorInput.value;
   } else {
-    nickInput.readOnly = false;
-    nickColorInput.disabled = false;
-    nickColorCircle.style.pointerEvents = 'auto';
-    nickInput.title = "";
-    nickColorInput.value = localStorage.getItem('nickColor') || '#58a6ff';
-    nickColorCircle.style.background = nickColorInput.value;
+    nickInput.readOnly = false; nickColorInput.disabled = false; nickColorCircle.style.pointerEvents = 'auto'; nickInput.title = "";
+    nickColorInput.value = localStorage.getItem('nickColor') || '#58a6ff'; nickColorCircle.style.background = nickColorInput.value;
   }
 }
 
-/* login */
+/* LOGIN & save user color */
 loginBtn.onclick = async () => {
   const u = loginUser.value.trim();
   const p = loginPass.value;
   if(!u || !p) return alert('Täytä molemmat kentät');
   if(users[u] && users[u] !== p) return alert('Väärä salasana');
-  users[u] = p;
-  localStorage.setItem('users',JSON.stringify(users));
-  localStorage.setItem('session',u);
-  nickInput.value = u;
-  localStorage.setItem('nick', u);
-  // write user doc with color/joined if not exists
-  const userRef = doc(db,'users',u);
-  try{
-    const snap = await getDoc(userRef);
-    const colorToSave = localStorage.getItem('nickColor') || '#58a6ff';
-    if(!snap.exists()){
-      await setDoc(userRef, { color: colorToSave, joined: serverTimestamp() });
-    } else {
-      // ensure color saved
-      await updateDoc(userRef, { color: colorToSave }).catch(()=>{});
-    }
-    userCache.set(u, { color: colorToSave });
-  }catch(e){ console.warn('user save err', e); }
+  users[u] = p; localStorage.setItem('users',JSON.stringify(users));
+  localStorage.setItem('session',u); nick = u; localStorage.setItem('nick', u);
+  // save color to users collection
+  const colorToSave = localStorage.getItem('nickColor') || '#58a6ff';
+  try{ await setDoc(doc(db,'users',u), { color: colorToSave, joined: serverTimestamp() }, { merge: true }); userCache.set(u,{color:colorToSave}); }catch(e){}
   showHome();
 };
-demoBtn.onclick = async () => {
+demoBtn.onclick = async ()=>{
   const guest = 'Guest' + Math.floor(Math.random()*10000);
-  localStorage.setItem('session', guest);
-  nickInput.value = guest;
-  localStorage.setItem('nick', guest);
-  localStorage.setItem('nickColor', getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6');
-  // record guest in users collection for profile display (no sensitive data)
-  try{
-    const userRef = doc(db,'users',guest);
-    if(!(await getDoc(userRef)).exists()) await setDoc(userRef, { color: getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(), joined: serverTimestamp() });
-    userCache.set(guest, { color: getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() });
-  }catch(e){}
+  localStorage.setItem('session', guest); nick = guest; localStorage.setItem('nick', guest);
+  const guestColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
+  localStorage.setItem('nickColor', guestColor);
+  try{ await setDoc(doc(db,'users',guest), { color: guestColor, joined: serverTimestamp() }, { merge: true }); userCache.set(guest,{color:guestColor}); }catch(e){}
   showHome();
 };
 
-/* SETTINGS menu (gear) */
-settingsBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const open = settingsMenu.classList.toggle('show');
-  settingsMenu.setAttribute('aria-hidden', !open);
-  profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
-});
-settingsMenu.addEventListener('click', (e) => e.stopPropagation());
-document.addEventListener('click', () => {
-  if(settingsMenu.classList.contains('show')){
-    settingsMenu.classList.remove('show');
-    settingsMenu.setAttribute('aria-hidden','true');
-  }
-  if(profileCard.classList.contains('show')){
-    profileCard.classList.remove('show');
-    profileCard.setAttribute('aria-hidden','true');
-  }
-});
+/* settings */
+settingsBtn.addEventListener('click',(e)=>{ e.stopPropagation(); const open = settingsMenu.classList.toggle('show'); settingsMenu.setAttribute('aria-hidden', !open); profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); });
+document.addEventListener('click', ()=>{ if(settingsMenu.classList.contains('show')){ settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); } if(profileCard.classList.contains('show')){ profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } hideContextMenu(); });
 
-/* Logout via settings */
-settingsLogout.addEventListener('click', () => {
-  settingsMenu.classList.remove('show');
-  localStorage.removeItem('session');
-  showLogin();
-});
+settingsLogout.addEventListener('click', ()=>{ settingsMenu.classList.remove('show'); localStorage.removeItem('session'); showLogin(); });
+settingsDelete.addEventListener('click', async ()=>{ settingsMenu.classList.remove('show'); const session = localStorage.getItem('session'); if(!session){ alert('No logged-in user'); return; } if(session.startsWith('Guest')){ alert('Guest account cannot be deleted.'); return; } if(!confirm(`Delete user "${session}" and its saved credentials? This cannot be undone.`)) return; try{ users = JSON.parse(localStorage.getItem('users')||'{}'); delete users[session]; localStorage.setItem('users', JSON.stringify(users)); await deleteDoc(doc(db,'users',session)).catch(()=>{}); }catch(e){} localStorage.removeItem('session'); localStorage.removeItem('nick'); showLogin(); });
 
-/* Delete user via settings */
-settingsDelete.addEventListener('click', async () => {
-  settingsMenu.classList.remove('show');
-  const session = localStorage.getItem('session');
-  if(!session){ alert('Ei kirjautunutta käyttäjää'); return; }
-  if(session.startsWith('Guest')){ alert('Guest-tiliä ei voi poistaa.'); return; }
-  if(!confirm(`Poistetaanko käyttäjä "${session}" ja sen tallennetut tunnukset? Tämä ei ole peruutettavissa.`)) return;
-  try{
-    users = JSON.parse(localStorage.getItem('users')||'{}');
-    delete users[session];
-    localStorage.setItem('users', JSON.stringify(users));
-    // remove Firestore user doc if you want (optional)
-    await deleteDoc(doc(db,'users',session)).catch(()=>{});
-  }catch(e){}
-  localStorage.removeItem('session');
-  localStorage.removeItem('nick');
-  showLogin();
-});
+function showProfileCardFor(name, color, joined, anchorEl){ profileAvatar.textContent = name?.[0] || '?'; profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); profileName.textContent = name; profileColor.textContent = color || ''; profileJoined.textContent = joined ? `Joined: ${new Date(joined).toLocaleDateString()}` : ''; if(anchorEl){ const r = anchorEl.getBoundingClientRect(); profileCard.style.top = (r.bottom + 8) + 'px'; profileCard.style.right = Math.max(12, window.innerWidth - r.right) + 'px'; } profileCard.classList.add('show'); profileCard.setAttribute('aria-hidden','false'); }
 
-/* profile card show when hovering (desktop) or clicking (mobile) a name */
-function showProfileCardFor(name, color, joined, anchorEl){
-  profileAvatar.textContent = name?.[0] || '?';
-  profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
-  profileName.textContent = name;
-  profileColor.textContent = color || '';
-  profileJoined.textContent = joined ? `Joined: ${new Date(joined).toLocaleDateString()}` : '';
-  if(anchorEl){
-    const r = anchorEl.getBoundingClientRect();
-    profileCard.style.top = (r.bottom + 8) + 'px';
-    profileCard.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
-  }
-  profileCard.classList.add('show'); profileCard.setAttribute('aria-hidden','false');
+nickColorCircle.addEventListener('click', ()=> { if(nickColorInput.disabled) return; nickColorInput.click(); });
+nickColorInput.addEventListener('input', async ()=>{ nickColorCircle.style.background = nickColorInput.value; localStorage.setItem('nickColor', nickColorInput.value); const session = localStorage.getItem('session') || ''; if(session && !session.startsWith('Guest')){ try{ await setDoc(doc(db,'users',session), { color: nickColorInput.value }, { merge: true }); userCache.set(session,{color:nickColorInput.value}); }catch(e){} } });
+
+/* ROOM LIST */
+async function loadRooms(){ roomList.innerHTML=''; roomListSidebar.innerHTML=''; roomListMobile.innerHTML=''; try{ const s = await getDocs(collection(db,'rooms')); s.forEach(r=> renderRoomEntry(r.id)); }catch(e){ console.error('loadRooms',e);} }
+function renderRoomEntry(id){ const createEl=(container)=>{ const d=document.createElement('div'); d.className='room'; d.textContent='# '+id; d.onclick=()=> joinRoom(id); container.appendChild(d); }; createEl(roomList); createEl(roomListSidebar); createEl(roomListMobile); }
+
+createRoomBtn.onclick = async ()=>{ const r = prompt('Room name'); if(!r) return; const p = prompt('Password (optional)'); const ref = doc(db,'rooms',r); const snap = await getDoc(ref); if(!snap.exists()) await setDoc(ref,{password:p||'',created:serverTimestamp()}); joinRoom(r); };
+
+/* JOIN ROOM */
+async function joinRoom(r){ const ref=doc(db,'rooms',r); const snap=await getDoc(ref); if(!snap.exists()) return alert('Room not found'); const pass = prompt('Password'); if(pass !== snap.data().password) return alert('Incorrect room password'); nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000)); const session = localStorage.getItem('session') || ''; if(session && session.startsWith('Guest')){ nickColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6'; } else { nickColor = nickColorInput.value || localStorage.getItem('nickColor') || '#58a6ff'; } localStorage.setItem('nick', nick); localStorage.setItem('nickColor', nickColor); // close mobile drawer smoothly if open
+  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200; const drawerOpen = mobileDrawer.classList.contains('show'); if(isMobile && drawerOpen){ mobileDrawer.classList.remove('show'); mobileOverlay.classList.remove('show'); setTimeout(()=>{ mobileOverlay.style.display='none'; mobileDrawer.style.display='none'; enterRoom(r); updateOpenLobbyBtnVisibility(); }, durationMs+20); } else enterRoom(r);
 }
 
-/* nick color */
-nickColorCircle.addEventListener('click', ()=> {
-  if(nickColorInput.disabled) return;
-  nickColorInput.click();
-});
-nickColorInput.addEventListener('input', async ()=>{
-  nickColorCircle.style.background = nickColorInput.value;
-  localStorage.setItem('nickColor', nickColorInput.value);
-  // update Firestore users doc if logged in
-  const session = localStorage.getItem('session') || '';
-  if(session && !session.startsWith('Guest')){
-    try{ await setDoc(doc(db,'users',session), { color: nickColorInput.value, joined: serverTimestamp() }, { merge: true }); userCache.set(session, { color: nickColorInput.value }); }catch(e){}
-  }
-});
-
-/* rooms load/render */
-async function loadRooms(){
-  roomList.innerHTML = '';
-  roomListSidebar.innerHTML = '';
-  roomListMobile.innerHTML = '';
-  try{
-    const s = await getDocs(collection(db,'rooms'));
-    s.forEach(r => renderRoomEntry(r.id));
-  }catch(e){ console.error('loadRooms error', e); }
-}
-function renderRoomEntry(id){
-  const createEl = (container) => {
-    const d = document.createElement('div');
-    d.className = 'room';
-    d.textContent = '# ' + id;
-    d.onclick = ()=> joinRoom(id);
-    container.appendChild(d);
-  };
-  createEl(roomList);
-  createEl(roomListSidebar);
-  createEl(roomListMobile);
-}
-
-/* create/join handlers */
-createRoomBtn.onclick = async ()=> {
-  const r = prompt('Room name'); if(!r) return;
-  const p = prompt('Password (optional)');
-  const ref = doc(db,'rooms',r);
-  const snap = await getDoc(ref);
-  if(!snap.exists()) await setDoc(ref,{password:p||'',created:serverTimestamp()});
-  joinRoom(r);
-};
-
-/* joinRoom handles mobile drawer smooth close when applicable, then calls enterRoom */
-async function joinRoom(r){
-  const ref = doc(db,'rooms',r);
-  const snap = await getDoc(ref);
-  if(!snap.exists()) return alert("Huonetta ei löytynyt");
-  const pass = prompt('Password');
-  if(pass !== snap.data().password) return alert('Väärä huoneen salasana');
-
-  // Save nick/color
-  nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000));
-  const session = localStorage.getItem('session') || '';
-  if(session.startsWith('Guest')){
-    nickColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
-  } else {
-    nickColor = nickColorInput.value;
-  }
-  localStorage.setItem('nick', nick);
-  localStorage.setItem('nickColor', nickColor);
-
-  // If mobile & drawer open -> animate drawer close smoothly, THEN enter room
-  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
-  const drawerOpen = mobileDrawer.classList.contains('show');
-  if(isMobile && drawerOpen){
-    mobileDrawer.classList.remove('show');
-    mobileOverlay.classList.remove('show');
-    setTimeout(()=> {
-      mobileOverlay.style.display = 'none';
-      mobileDrawer.style.display = 'none';
-      enterRoom(r);
-      updateOpenLobbyBtnVisibility();
-    }, durationMs + 20);
-  } else {
-    enterRoom(r);
-  }
-}
-
-/* enterRoom performs the actual subscription and view switch */
-async function enterRoom(r){
-  showMain();
-  room = r;
-  roomName.textContent = '# ' + r;
-  // cleanup previous listeners
-  if(messagesUnsub) messagesUnsub();
-  if(typingUnsub) typingUnsub();
-
-  // clear chat area
-  chat.innerHTML = '';
-  lastMessageTime = Date.now();
-
-  // incremental messages snapshot using docChanges
+/* ENTER ROOM with incremental rendering */
+async function enterRoom(r){ showMain(); room = r; roomName.textContent = '# '+r; chat.innerHTML=''; if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub();
   const msgsQuery = query(collection(db,'rooms',room,'messages'), orderBy('time'));
-  messagesUnsub = onSnapshot(msgsQuery, snap => {
+  messagesUnsub = onSnapshot(msgsQuery, snap=>{
     const shouldScroll = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 160;
-    snap.docChanges().forEach(change => {
-      const d = change.doc;
-      const m = d.data();
-      if(change.type === 'added'){
-        renderMessage(d.id, m);
-        // mark as seen for this user (only for new messages)
-        const localNick = localStorage.getItem('nick') || nick;
-        if(localNick){
-          setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localNick), {name: localNick, t: serverTimestamp()}).catch(()=>{});
+    snap.docChanges().forEach(change=>{
+      const d = change.doc; const m = d.data(); if(change.type==='added'){ renderMessage(d.id, m); // mark seen
+          const localNick = localStorage.getItem('nick') || nick; if(localNick){ setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localNick), {name: localNick, t: Date.now()}).catch(()=>{}); }
         }
-      } else if(change.type === 'modified'){
-        updateMessage(d.id, m);
-      } else if(change.type === 'removed'){
-        removeMessage(d.id);
-      }
+      else if(change.type==='modified') updateMessage(d.id, m);
+      else if(change.type==='removed') removeMessage(d.id);
     });
     if(shouldScroll) scrollChatToBottom();
   });
 
-  // typing snapshot
-  typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap => {
-    const now = Date.now();
-    const usersTyping = [];
-    snap.forEach(d=> {
-      const t = d.data().t?.toMillis?.() ?? d.data().t;
-      if(d.id !== (localStorage.getItem('nick')||nick) && t && now - t < 2000) usersTyping.push(d.id);
-    });
-    typingIndicator.textContent = usersTyping.length ? usersTyping.join(', ') + ' is typing...' : '';
+  // use client timestamps for typing to avoid serverTimestamp latency
+  typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap=>{
+    const now = Date.now(); const usersTyping = [];
+    snap.forEach(d=>{ const t = d.data().t; if(d.id !== (localStorage.getItem('nick')||nick) && t && now - t < 2500) usersTyping.push(d.id); });
+    typingIndicator.textContent = usersTyping.length ? usersTyping.join(', ') + ' kirjoittaa...' : '';
   });
 }
 
-/* DOM helpers for incremental updates */
-function makeMessageElement(id, m){
-  const el = document.createElement('div');
-  el.className = 'message';
-  el.dataset.msgid = id;
-  el.dataset.owner = m.name;
+/* MESSAGE RENDER HELPERS */
+function makeMessageElement(id,m){ const el=document.createElement('div'); el.className='message'; el.dataset.msgid=id; el.dataset.owner=m.name; const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:''; const safeTextHtml = linkify(escapeHtml(m.text||'')); el.innerHTML = `
+  <div class="avatar" style="background:${m.color||getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>
+  <div class="msg">
+    ${replyHtml}
+    <b class="msg-sender" style="color:${m.color||'#999'};cursor:pointer">${escapeHtml(m.name)}</b>
+    <span class="time">${m.time?.toMillis? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
+    <div class="msg-text">${safeTextHtml}</div>
+    <div class="reply-btn" data-name="${escapeAttr(m.name)}" data-text="${escapeAttr(m.text)}">reply</div>
+  </div>
+`;
+  // interactions
+  const senderEl = el.querySelector('.msg-sender'); if(senderEl){ if(!isMobile){ senderEl.addEventListener('mouseenter', async ev=>{ ev.stopPropagation(); let joined=null; let color=m.color; try{ const cached=userCache.get(m.name); if(cached && cached.color) color=cached.color; else{ const us=await getDoc(doc(db,'users',m.name)); if(us.exists()){ const ud=us.data(); joined=ud.joined?.toMillis? new Date(ud.joined.toMillis()) : ud.joined; color = ud.color || color; userCache.set(m.name,{color}); } } }catch(e){} showProfileCardFor(m.name,color,joined,senderEl); }); senderEl.addEventListener('mouseleave', ()=>{ setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120); }); } else { senderEl.addEventListener('click', async ev=>{ ev.stopPropagation(); let joined=null; let color=m.color; try{ const cached=userCache.get(m.name); if(cached && cached.color) color=cached.color; else{ const us=await getDoc(doc(db,'users',m.name)); if(us.exists()){ const ud=us.data(); joined=ud.joined?.toMillis? new Date(ud.joined.toMillis()) : ud.joined; color = ud.color || color; userCache.set(m.name,{color}); } } }catch(e){} showProfileCardFor(m.name,color,joined,senderEl); }); } }
 
-  const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
-  const safeTextHtml = linkify(escapeHtml(m.text || ''));
+  // hover tooltip
+  el.addEventListener('mouseenter', async ()=>{ if(m.name === (localStorage.getItem('nick')||nick)) return; const rect = el.getBoundingClientRect(); tooltip.style.left = (rect.right + 8) + 'px'; tooltip.style.top = (rect.top) + 'px'; tooltip.textContent = 'Loading...'; tooltip.style.display = 'block'; tooltip.setAttribute('aria-hidden','false'); try{ const seenDocs = await getDocs(collection(db, 'rooms', room, 'messages', id, 'seen')); const names=[]; seenDocs.forEach(sd=> names.push(sd.data().name)); tooltip.textContent = names.length ? ('Seen by: ' + names.join(', ')) : 'No one has seen this yet'; }catch(e){ tooltip.textContent = '—'; } });
+  el.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; tooltip.setAttribute('aria-hidden','true'); });
 
-  el.innerHTML = `
-    <div class="avatar" style="background:${m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>
-    <div class="msg">
-      ${replyHtml}
-      <b class="msg-sender" style="color:${m.color || '#999'};cursor:pointer">${escapeHtml(m.name)}</b>
-      <span class="time">${m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
-      <div class="msg-text">${safeTextHtml}</div>
-      <div class="reply-btn" data-name="${escapeAttr(m.name)}" data-text="${escapeAttr(m.text)}">reply</div>
-    </div>
-  `;
-
-  // attach interactions
-  const senderEl = el.querySelector('.msg-sender');
-  if(senderEl){
-    if(!isMobile){
-      senderEl.addEventListener('mouseenter', async (ev)=>{
-        ev.stopPropagation();
-        let joined = null; let color = m.color;
-        try{
-          const cached = userCache.get(m.name);
-          if(cached && cached.color) color = cached.color;
-          else {
-            const us = await getDoc(doc(db,'users',m.name));
-            if(us.exists()){
-              const ud = us.data();
-              joined = ud.joined?.toMillis ? new Date(ud.joined.toMillis()) : ud.joined;
-              color = ud.color || color;
-              userCache.set(m.name, { color });
-            }
-          }
-        }catch(e){}
-        showProfileCardFor(m.name, color, joined, senderEl);
-      });
-      senderEl.addEventListener('mouseleave', ()=>{
-        setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120);
-      });
-    } else {
-      senderEl.addEventListener('click', async (ev)=>{
-        ev.stopPropagation();
-        let joined = null; let color = m.color;
-        try{
-          const cached = userCache.get(m.name);
-          if(cached && cached.color) color = cached.color;
-          else {
-            const us = await getDoc(doc(db,'users',m.name));
-            if(us.exists()){
-              const ud = us.data();
-              joined = ud.joined?.toMillis ? new Date(ud.joined.toMillis()) : ud.joined;
-              color = ud.color || color;
-              userCache.set(m.name, { color });
-            }
-          }
-        }catch(e){}
-        showProfileCardFor(m.name, color, joined, senderEl);
-      });
-    }
-  }
-
-  // hover to show who has seen this message
-  el.addEventListener('mouseenter', async (ev)=>{
-    if(m.name === (localStorage.getItem('nick')||nick)) return;
-    const rect = el.getBoundingClientRect();
-    tooltip.style.left = (rect.right + 8) + 'px';
-    tooltip.style.top = (rect.top) + 'px';
-    tooltip.textContent = 'Loading...';
-    tooltip.style.display = 'block';
-    tooltip.setAttribute('aria-hidden','false');
-    try{
-      const seenDocs = await getDocs(collection(db, 'rooms', room, 'messages', id, 'seen'));
-      const names = [];
-      seenDocs.forEach(sd=> names.push(sd.data().name));
-      tooltip.textContent = names.length ? ('Seen by: ' + names.join(', ')) : 'No one has seen this yet';
-    }catch(e){ tooltip.textContent = '—'; }
-  });
-  el.addEventListener('mouseleave', ()=>{ tooltip.style.display = 'none'; tooltip.setAttribute('aria-hidden','true'); });
-
-  // context menu (desktop) only for own messages
-  el.addEventListener('contextmenu', (ev)=>{
-    if((m.name !== (localStorage.getItem('nick')||nick))) return;
-    ev.preventDefault();
-    showEditDeleteMenu(ev.clientX, ev.clientY, id, m.text);
+  // right-click -> context menu
+  el.addEventListener('contextmenu', ev=>{ ev.preventDefault(); const owner = m.name; const current = localStorage.getItem('nick') || nick; const options=[];
+    if(owner === current){ options.push({label:'Edit', action:()=> editMessageInline(id,m)}); options.push({label:'Delete', action:()=> deleteMessage(id)}); } else { options.push({label:'Reply', action:()=> { replyTo = { name:m.name, text:m.text }; replyBox.style.display='block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn=document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; } }); options.push({label:'Copy', action:()=> navigator.clipboard?.writeText(m.text||'')}); }
+    showContextMenu(ev.clientX, ev.clientY, options);
   });
 
-  // attach mobile interactions including swipe-to-reply and long-press edit/delete
-  attachMobileInteractions(el, id, m);
+  // mobile interactions & reply button
+  el.querySelectorAll('.reply-btn').forEach(b=> b.addEventListener('click', ()=>{ replyTo = { name: b.dataset.name, text: b.dataset.text }; replyBox.style.display='block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn=document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; }));
 
-  // reply button
-  el.querySelectorAll('.reply-btn').forEach(b => b.addEventListener('click', (e)=>{
-    replyTo = { name: b.dataset.name, text: b.dataset.text };
-    replyBox.style.display = 'block';
-    replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-    const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
-  }));
-
+  attachMobileInteractions(el,id,m);
   return el;
 }
 
-function renderMessage(id, m){
-  // skip if already exists
-  if(chat.querySelector(`[data-msgid="${id}"]`)) return;
-  const el = makeMessageElement(id, m);
-  chat.appendChild(el);
-}
+function renderMessage(id,m){ if(chat.querySelector(`[data-msgid="${id}"]`)) return; const el = makeMessageElement(id,m); chat.appendChild(el); }
+function updateMessage(id,m){ const el = chat.querySelector(`[data-msgid="${id}"]`); if(!el){ renderMessage(id,m); return; } const avatar = el.querySelector('.avatar'); const sender = el.querySelector('.msg-sender'); const time = el.querySelector('.time'); const msgText = el.querySelector('.msg-text'); if(avatar) avatar.style.background = m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; } if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''; if(msgText) msgText.innerHTML = linkify(escapeHtml(m.text||'')); const replyPrev = el.querySelector('.reply-preview'); if(replyPrev && !m.reply) replyPrev.remove(); else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', `<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`); }
+function removeMessage(id){ const el = chat.querySelector(`[data-msgid="${id}"]`); if(el) el.remove(); }
 
-function updateMessage(id, m){
-  const el = chat.querySelector(`[data-msgid="${id}"]`);
-  if(!el) { renderMessage(id, m); return; }
-  const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
-  const safeTextHtml = linkify(escapeHtml(m.text || ''));
-  const avatar = el.querySelector('.avatar');
-  const sender = el.querySelector('.msg-sender');
-  const time = el.querySelector('.time');
-  const msgText = el.querySelector('.msg-text');
-  if(avatar) avatar.style.background = m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
-  if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; }
-  if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-  if(msgText) msgText.innerHTML = safeTextHtml;
-  // reply preview update
-  const replyPrev = el.querySelector('.reply-preview');
-  if(replyPrev && !m.reply) replyPrev.remove();
-  else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', replyHtml);
-}
+/* context menu functions */
+function showContextMenu(x,y,options){ contextMenu.innerHTML=''; options.forEach(opt=>{ const btn=document.createElement('button'); btn.textContent = opt.label; btn.onclick = ()=>{ hideContextMenu(); try{ opt.action(); }catch(e){ console.error(e);} }; contextMenu.appendChild(btn); }); contextMenu.style.left = x + 'px'; contextMenu.style.top = y + 'px'; contextMenu.style.display = 'block'; contextMenu.setAttribute('aria-hidden','false'); }
+function hideContextMenu(){ contextMenu.style.display = 'none'; contextMenu.setAttribute('aria-hidden','true'); }
 
-function removeMessage(id){
-  const el = chat.querySelector(`[data-msgid="${id}"]`);
-  if(el) el.remove();
-}
+/* edit inline (prompt-based, could be replaced with inline editor) */
+async function editMessageInline(msgId, oldData){ const newText = prompt('Edit message', oldData.text); if(newText == null) return; try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText }); }catch(e){ console.error('edit err', e); } }
+async function deleteMessage(msgId){ if(!confirm('Delete this message?')) return; try{ // delete seen subdocs
+    const seenSnap = await getDocs(collection(db,'rooms',room,'messages',msgId,'seen')); for(const sd of seenSnap.docs) await deleteDoc(sd.ref).catch(()=>{}); await deleteDoc(doc(db,'rooms',room,'messages',msgId)); }catch(e){ console.error('delete msg err',e); } }
 
-/* show a simple edit/delete floating menu */
-function showEditDeleteMenu(x,y,msgId, currentText){
-  const choice = prompt('Type "edit" to edit or "delete" to delete this message');
-  if(!choice) return;
-  const localNick = localStorage.getItem('nick') || nick;
-  if(choice.toLowerCase().startsWith('e')){
-    const newText = prompt('Edit message', currentText);
-    if(newText == null) return;
-    updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText}).catch(console.error);
-  } else if(choice.toLowerCase().startsWith('d')){
-    if(confirm('Poistetaanko tämä viesti?')) deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error);
-  }
-}
+/* mobile interactions: same swipe/longpress logic as before */
+function attachMobileInteractions(el,msgId,messageData){ let longPressTimer=null; let touchStartX=0; let touchStartY=0; let dragging=false; el.addEventListener('touchstart', e=>{ const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY; if(messageData.name === (localStorage.getItem('nick')||nick)){ longPressTimer = setTimeout(()=>{ const choice = prompt('Type "edit" to edit or "delete" to delete this message'); if(!choice) return; if(choice.toLowerCase().startsWith('e')){ const newText = prompt('Edit message', messageData.text); if(newText==null) return; updateDoc(doc(db,'rooms',room,'messages',msgId), {text:newText}).catch(()=>{}); } else if(choice.toLowerCase().startsWith('d')){ if(confirm('Delete this message?')) deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(()=>{}); } },650); }
+    dragging=false; el.style.transition=''; }, {passive:true});
+  el.addEventListener('touchmove', e=>{ const t=e.touches[0]; const dx=t.clientX-touchStartX; const dy=t.clientY-touchStartY; if(Math.abs(dy) > Math.abs(dx)){ if(longPressTimer) clearTimeout(longPressTimer); return; } if(!dragging && Math.abs(dx) > 10){ dragging=true; if(longPressTimer) clearTimeout(longPressTimer); } if(dragging){ e.preventDefault(); const capped = Math.min(Math.max(dx,0),120); el.style.transform = `translateX(${capped}px)`; el.style.willChange='transform'; el.style.transition='none'; if(capped>36){ const m = messageData; replyBox.style.display='block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(m.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn=document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; } else if(capped <=36){ if(!replyTo) replyBox.style.display='none'; } } }, {passive:false});
+  el.addEventListener('touchend', ()=>{ if(longPressTimer) clearTimeout(longPressTimer); if(el.style.transform && el.style.transform !== 'none'){ const m = el.style.transform.match(/translateX\((\d+)px\)/); const px = m ? parseInt(m[1],10) : 0; el.style.transition = 'transform 180ms ease'; if(px>60){ el.style.transform='translateX(0)'; setTimeout(()=>{ replyTo = { name: messageData.name, text: messageData.text }; replyBox.style.display='block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn=document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; },160); } else { el.style.transform='translateX(0)'; setTimeout(()=>{ if(!replyTo) replyBox.style.display='none'; },160); } } el.style.willChange=''; }); }
 
-/* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply */
-function attachMobileInteractions(el, msgId, messageData){
-  let longPressTimer = null;
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let dragging = false;
-
-  el.addEventListener('touchstart', (e)=>{
-    const t = e.touches[0];
-    touchStartX = t.clientX; touchStartY = t.clientY;
-    if(messageData.name === (localStorage.getItem('nick')||nick)){
-      longPressTimer = setTimeout(()=> {
-        const choice = prompt('Type "edit" to edit or "delete" to delete this message');
-        if(!choice) return;
-        if(choice.toLowerCase().startsWith('e')){
-          const newText = prompt('Edit message', messageData.text);
-          if(newText == null) return;
-          updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText}).catch(console.error);
-        } else if(choice.toLowerCase().startsWith('d')){
-          if(confirm('Delete this message?')) deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error);
-        }
-      }, 650);
-    }
-    dragging = false;
-    el.style.transition = '';
-  }, {passive:true});
-
-  el.addEventListener('touchmove', (e)=>{
-    const t = e.touches[0];
-    const dx = t.clientX - touchStartX;
-    const dy = t.clientY - touchStartY;
-    if(Math.abs(dy) > Math.abs(dx)){
-      if(longPressTimer) clearTimeout(longPressTimer);
-      return;
-    }
-    if(!dragging && Math.abs(dx) > 10){
-      dragging = true;
-      if(longPressTimer) clearTimeout(longPressTimer);
-    }
-    if(dragging){
-      e.preventDefault();
-      const capped = Math.min(Math.max(dx, 0), 120);
-      el.style.transform = `translateX(${capped}px)`;
-      el.style.willChange = 'transform';
-      el.style.transition = 'none';
-      if(capped > 36){
-        const m = messageData;
-        replyBox.style.display = 'block';
-        replyBox.innerHTML = `Replying to <b>${escapeHtml(m.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-        const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
-      } else if(capped <= 36) {
-        if(!replyTo) replyBox.style.display = 'none';
-      }
-    }
-  }, {passive:false});
-
-  el.addEventListener('touchend', ()=>{
-    if(longPressTimer) clearTimeout(longPressTimer);
-    if(el.style.transform && el.style.transform !== 'none'){
-      const m = el.style.transform.match(/translateX\((\d+)px\)/);
-      const px = m ? parseInt(m[1],10) : 0;
-      el.style.transition = 'transform 180ms ease';
-      if(px > 60){
-        el.style.transform = 'translateX(0)';
-        setTimeout(()=>{
-          replyTo = { name: messageData.name, text: messageData.text };
-          replyBox.style.display = 'block';
-          replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-          const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
-        }, 160);
-      } else {
-        el.style.transform = 'translateX(0)';
-        setTimeout(()=>{ if(!replyTo) replyBox.style.display = 'none'; }, 160);
-      }
-    }
-    el.style.willChange = '';
-  });
-}
-
-/* typing indicator management */
-msg.addEventListener('input', ()=> {
+/* typing indicator: use client timestamp to be immediate */
+msg.addEventListener('input', ()=>{
   if(!room || !nick) return;
-  if(msg.value.trim()===''){
-    deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{});
-    return;
-  }
-  setDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick),{t:serverTimestamp()});
+  const localNick = localStorage.getItem('nick') || nick;
+  if(msg.value.trim()===''){ deleteDoc(doc(db,'rooms',room,'typing',localNick)).catch(()=>{}); return; }
+  setDoc(doc(db,'rooms',room,'typing',localNick),{t: Date.now()}).catch(()=>{});
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=> { deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); }, 1500);
+  typingTimeout = setTimeout(()=>{ deleteDoc(doc(db,'rooms',room,'typing',localNick)).catch(()=>{}); }, 1500);
 });
-msg.addEventListener('blur', ()=> { if(room && (localStorage.getItem('nick')||nick)) deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); });
+msg.addEventListener('blur', ()=>{ if(room && (localStorage.getItem('nick')||nick)) deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); });
 
 /* reply UI */
-chat.addEventListener('click', (e)=>{
-  const b = e.target.closest('.reply-btn');
-  if(!b) return;
-  replyTo = { name: b.dataset.name, text: b.dataset.text };
-  replyBox.style.display = 'block';
-  replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
-  document.getElementById('cancelReply').onclick = cancelReply;
-});
-function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; }
+chat.addEventListener('click', (e)=>{ const b = e.target.closest('.reply-btn'); if(!b) return; replyTo = { name: b.dataset.name, text: b.dataset.text }; replyBox.style.display='block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; document.getElementById('cancelReply').onclick = cancelReply; });
+function cancelReply(){ replyTo = null; replyBox.style.display='none'; }
 
-/* send messages */
-msg.addEventListener('keydown', async (e)=>{
-  if(e.key !== 'Enter') return;
-  const textRaw = msg.value.trim(); msg.value = ''; if(!textRaw) return;
-  if(!room){ alert('Et ole huoneessa'); return; }
-  deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{});
-
-  // Commands handling
-  if(textRaw.startsWith('/')){
-    await handleCommand(textRaw);
-    return;
-  }
-
-  if(textRaw === '/clear'){
-    if(!confirm('Poistetaanko kaikki viestit tästä huoneesta?')) return;
-    try{
-      const msgs = await getDocs(collection(db,'rooms',room,'messages'));
-      for(const d of msgs.docs){
-        // delete seen subdocs first
-        try{
-          const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen'));
-          for(const sd of seenSnap.docs) await deleteDoc(sd.ref).catch(()=>{});
-        }catch(e){}
-        await deleteDoc(d.ref).catch(()=>{});
-      }
-    }catch(e){ console.error('/clear error', e); }
-    return;
-  }
-  if(textRaw === '/delete'){
-    if(!confirm('Poistetaanko huone ja kaikki viestit?')) return;
-    try{
-      // delete typing docs
-      const typingDocs = await getDocs(collection(db,'rooms',room,'typing'));
-      for(const t of typingDocs.docs) await deleteDoc(t.ref).catch(()=>{});
-      // delete messages & their seen subcollections
-      const msgs = await getDocs(collection(db,'rooms',room,'messages'));
-      for(const d of msgs.docs){
-        try{
-          const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen'));
-          for(const sd of seenSnap.docs) await deleteDoc(sd.ref).catch(()=>{});
-        }catch(e){}
-        await deleteDoc(d.ref).catch(()=>{});
-      }
-      // attempt to delete room doc (may fail if server rules or remaining subcollections)
-      await deleteDoc(doc(db,'rooms',room)).catch(()=>{});
-      // navigate back to home
-      if(messagesUnsub) messagesUnsub();
-      if(typingUnsub) typingUnsub();
-      room = '';
-      showHome();
-      chat.innerHTML = '';
-    }catch(e){ console.error('/delete error', e); }
-    return;
-  }
-
-  // compute color deterministically
+/* send messages + command handling BEFORE sending */
+msg.addEventListener('keydown', async (e)=>{ if(e.key !== 'Enter') return; e.preventDefault(); const textRaw = msg.value.trim(); msg.value=''; if(!textRaw) return; if(!room){ alert('You are not in a room'); return; }
+  // handle commands first
+  if(textRaw.startsWith('/')){ await handleCommand(textRaw); return; }
+  // send message
   const colorToSend = (localStorage.getItem('session') && !localStorage.getItem('session').startsWith('Guest')) ? (localStorage.getItem('nickColor') || '#58a6ff') : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
+  try{ await addDoc(collection(db,'rooms',room,'messages'), { name: localStorage.getItem('nick') || nick, text: textRaw, reply: replyTo, color: colorToSend, time: serverTimestamp() }); }catch(e){ console.error('send err', e); }
+  replyTo = null; replyBox.style.display='none'; });
 
-  await addDoc(collection(db,'rooms',room,'messages'), {
-    name: localStorage.getItem('nick') || nick,
-    text: textRaw,
-    reply: replyTo,
-    color: colorToSend,
-    time: serverTimestamp()
-  }).catch(console.error);
-  replyTo = null; replyBox.style.display = 'none';
-});
+/* command processor (robust) */
+async function handleCommand(cmdText){ const parts = cmdText.split(/\s+/); const c = parts[0].toLowerCase(); if(c === '/clear'){ if(!confirm('Poistetaanko kaikki viestit tästä huoneesta?')) return; try{ const msgs = await getDocs(collection(db,'rooms',room,'messages')); for(const d of msgs.docs){ const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen')); for(const sd of seenSnap.docs) await deleteDoc(sd.ref).catch(()=>{}); await deleteDoc(d.ref).catch(()=>{}); } }catch(e){ console.error('/clear',e); } return; } if(c === '/delete'){ if(!confirm('Poistetaanko huone ja kaikki viestit?')) return; try{ const typingDocs = await getDocs(collection(db,'rooms',room,'typing')); for(const t of typingDocs.docs) await deleteDoc(t.ref).catch(()=>{}); const msgs = await getDocs(collection(db,'rooms',room,'messages')); for(const d of msgs.docs){ try{ const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen')); for(const sd of seenSnap.docs) await deleteDoc(sd.ref).catch(()=>{}); }catch(e){} await deleteDoc(d.ref).catch(()=>{}); } await deleteDoc(doc(db,'rooms',room)).catch(()=>{}); if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub(); room=''; chat.innerHTML=''; showHome(); }catch(e){ console.error('/delete',e); } return; } // extra helpful commands
+  if(c === '/roll'){ let n=1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1)); const rolls=[]; for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1); const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time: serverTimestamp()}); return; } if(c === '/coin'){ const r = Math.random() < 0.5 ? 'Heads' : 'Tails'; const txt = `${localStorage.getItem('nick')||nick} flipped a coin → ${r}`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time: serverTimestamp()}); return; } // fallback
+  await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time: serverTimestamp()}); }
 
-/* command processor */
-async function handleCommand(cmdText){
-  const parts = cmdText.split(/\s+/);
-  const c = parts[0].toLowerCase();
-  if(c === '/roll'){
-    let n = 1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1));
-    const rolls = [];
-    for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1);
-    const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/coin'){
-    const r = Math.random() < 0.5 ? 'Heads' : 'Tails';
-    const txt = `${localStorage.getItem('nick')||nick} flipped a coin → ${r}`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/tableflip'){
-    const txt = `${localStorage.getItem('nick')||nick} (╯°□°）╯︵ ┻━┻`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/shrug'){
-    const txt = `${localStorage.getItem('nick')||nick} ¯\\_(ツ)_/¯`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  // unknown command -> echo
-  await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
-}
+/* emoji picker */
+const emojiList = ["😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇","😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝","🤗","🤭","🤫","🤔","🤨","😐","😑","😶","🙄","😏","😣","😥","😮","😯","😲","😪","😫","🥱","😴","😌","😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓","👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏"];
+function buildEmojiPicker(){ emojiPicker.innerHTML=''; const grid=document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px'; emojiPicker.appendChild(grid); emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); }); }
+buildEmojiPicker(); emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
 
-/* emojis picker (GIFs removed) */
-const emojiList = [
-"😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
-"😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
-"🤗","🤭","🤫","🤔","🤨","😐","😑","😶","🙄","😏",
-"😣","😥","😮","😯","😲","😪","😫","🥱","😴","😌",
-"😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓",
-"👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏"
-];
+/* back */
+back.onclick = ()=>{ if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub(); showHome(); room=''; chat.innerHTML=''; typingIndicator.textContent=''; };
 
-function buildEmojiPicker(){
-  emojiPicker.innerHTML = '';
-  const grid = document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px';
-  emojiPicker.appendChild(grid);
-  emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); });
-}
-buildEmojiPicker();
-emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
+/* lobby size */
+const LOBBY_SIZES = [{name:'small', width:'120px'},{name:'normal', width:'260px'},{name:'large', width:'360px'}];
+let lobbySizeIndex = parseInt(localStorage.getItem('lobbySizeIndex')||'1',10); applyLobbySize();
+lobbySizeBtn.addEventListener('click', ()=>{ lobbySizeIndex=(lobbySizeIndex+1)%LOBBY_SIZES.length; applyLobbySize(); localStorage.setItem('lobbySizeIndex', lobbySizeIndex); });
+function applyLobbySize(){ const s=LOBBY_SIZES[lobbySizeIndex]; document.documentElement.style.setProperty('--lobby-width', s.width); lobbySizeBtn.textContent = s.name[0].toUpperCase(); if(isMobile){ const collapse = (s.name==='small'); lobby.classList.toggle('collapsed', collapse); chatSidebar.classList.toggle('collapsed', collapse); } else { lobby.classList.remove('collapsed'); chatSidebar.classList.remove('collapsed'); } }
 
-/* back button */
-back.onclick = ()=>{
-  if(messagesUnsub) messagesUnsub();
-  if(typingUnsub) typingUnsub();
-  showHome();
-  room = '';
-  chat.innerHTML = '';
-  typingIndicator.textContent = '';
-};
+/* Mobile drawer drag code unchanged (omitted here for brevity: kept from earlier) */
+let dragging=false; let startX=0; let lastX=0; let lastT=0; let vx=0; let drawerWidth=0; const EDGE_ZONE=36; const SHORT_THRESHOLD=30; const VELOCITY_THRESHOLD=0.35; let touchStarted=false; let touchStartX=0; let touchStartY=0; let touchPotentialDrag=false;
+function beginDrag(x, initiallyOpen){ dragging=true; startX=x; lastX=x; lastT=performance.now(); drawerWidth = mobileDrawer.getBoundingClientRect().width || (window.innerWidth * 0.8); mobileDrawer.style.transition='none'; mobileOverlay.style.transition='none'; if(!mobileOverlay.classList.contains('show')) mobileOverlay.style.display='block'; if(!mobileDrawer.classList.contains('show')) mobileDrawer.style.display='block'; mobileDrawer.classList.remove('show'); }
+function dragMove(x){ if(!dragging) return; const dx = x - startX; const wasOpen = mobileDrawer.classList.contains('show'); let translate; if(wasOpen) translate = Math.min(0, dx); else translate = Math.max(-drawerWidth, -drawerWidth + dx); if(translate > 0) translate=0; if(translate < -drawerWidth) translate = -drawerWidth; mobileDrawer.style.transform = `translateX(${translate}px)`; const openness = 1 - (Math.abs(translate) / drawerWidth); mobileOverlay.style.background = `rgba(0,0,0,${0.45 * openness})`; mobileOverlay.style.display='block'; const now = performance.now(); const dt = now-lastT || 16; vx = (x-lastX)/dt; lastX = x; lastT = now; }
+function endDrag(){ if(!dragging) return; dragging=false; const style = window.getComputedStyle(mobileDrawer); let translateX = 0; const matrix = style.transform; if(matrix && matrix !== 'none'){ try{ const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/); translateX = m ? parseFloat(m[1]) : 0; }catch(e){ translateX=0; } } else { const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/); translateX = m ? parseFloat(m[1]) : 0; } const wasOpen = mobileDrawer.classList.contains('show'); const openDecision = (()=>{ if(Math.abs(vx) > VELOCITY_THRESHOLD) return vx > 0; if(wasOpen) return !(Math.abs(translateX) > SHORT_THRESHOLD); else return (Math.abs(translateX) < (drawerWidth - SHORT_THRESHOLD)); })(); mobileDrawer.style.transition=''; mobileOverlay.style.transition=''; if(openDecision){ mobileDrawer.style.transform=''; mobileDrawer.classList.add('show'); mobileOverlay.classList.add('show'); updateOpenLobbyBtnVisibility(); } else { mobileDrawer.style.transform = `translateX(-${drawerWidth}px)`; mobileDrawer.classList.remove('show'); mobileOverlay.classList.remove('show'); setTimeout(()=>{ if(!mobileDrawer.classList.contains('show')){ mobileOverlay.style.display='none'; mobileDrawer.style.display='none'; updateOpenLobbyBtnVisibility(); } }, 220); } vx=0; mobileDrawer.style.willChange=''; }
 
-/* lobby size (kept) */
-const LOBBY_SIZES = [
-  {name:'small', width:'120px'},
-  {name:'normal', width:'260px'},
-  {name:'large', width:'360px'}
-];
-let lobbySizeIndex = parseInt(localStorage.getItem('lobbySizeIndex')||'1',10);
-applyLobbySize();
+document.addEventListener('touchstart', (e)=>{ if(!isMobile) return; const t=e.touches[0]; touchStartX=t.clientX; touchStartY=t.clientY; touchStarted=true; touchPotentialDrag=false; const drawerOpen = mobileDrawer.classList.contains('show'); const isHomeVisible = home.style.display !== 'none'; if(drawerOpen || (isHomeVisible && touchStartX <= EDGE_ZONE)) touchPotentialDrag = true; }, {passive:true});
 
-lobbySizeBtn.addEventListener('click', ()=> {
-  lobbySizeIndex = (lobbySizeIndex + 1) % LOBBY_SIZES.length;
-  applyLobbySize();
-  localStorage.setItem('lobbySizeIndex', lobbySizeIndex);
-});
-function applyLobbySize(){
-  const s = LOBBY_SIZES[lobbySizeIndex];
-  document.documentElement.style.setProperty('--lobby-width', s.width);
-  lobbySizeBtn.textContent = s.name[0].toUpperCase();
-  if(isMobile) {
-    const collapse = (s.name === 'small');
-    lobby.classList.toggle('collapsed', collapse);
-    chatSidebar.classList.toggle('collapsed', collapse);
-  } else {
-    lobby.classList.remove('collapsed');
-    chatSidebar.classList.remove('collapsed');
-  }
-}
+document.addEventListener('touchmove', (e)=>{ if(!isMobile || !touchStarted) return; const t=e.touches[0]; const dx = t.clientX - touchStartX; const dy = t.clientY - touchStartY; if(Math.abs(dy) > Math.abs(dx) + 8){ if(dragging) endDrag(); touchStarted=false; touchPotentialDrag=false; return; } if(!dragging){ if(touchPotentialDrag && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){ const drawerOpen = mobileDrawer.classList.contains('show'); beginDrag(t.clientX, drawerOpen); dragMove(t.clientX); return; } else return; } if(dragging) dragMove(t.clientX); }, {passive:true});
 
-/* Mobile drawer open/close smooth functions */
-function openMobileDrawer(){
-  mobileOverlay.classList.add('show');
-  mobileDrawer.classList.add('show');
-  mobileOverlay.style.display = 'block';
-  mobileDrawer.style.display = 'block';
-  mobileOverlay.setAttribute('aria-hidden','false'); mobileDrawer.setAttribute('aria-hidden','false');
-  updateOpenLobbyBtnVisibility();
-}
-function closeMobileDrawer(){
-  mobileDrawer.classList.remove('show');
-  mobileOverlay.classList.remove('show');
-  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
-  setTimeout(()=>{
-    if(!mobileDrawer.classList.contains('show')){
-      mobileOverlay.style.display = 'none';
-      mobileDrawer.style.display = 'none';
-      mobileOverlay.setAttribute('aria-hidden','true'); mobileDrawer.setAttribute('aria-hidden','true');
-      updateOpenLobbyBtnVisibility();
-    }
-  }, durationMs + 20);
-}
+document.addEventListener('touchend', (e)=>{ if(!isMobile) return; if(dragging) endDrag(); touchStarted=false; touchPotentialDrag=false; });
 
-/* Visibility logic for blue button (mobile) */
-function updateOpenLobbyBtnVisibility(){
-  const drawerOpen = mobileDrawer.classList.contains('show') || mobileOverlay.classList.contains('show');
-  if(!isMobile){
-    openLobbyBtn.style.display = 'none'; return;
-  }
-  const isHomeVisible = home.style.display !== 'none';
-  if(isHomeVisible && !drawerOpen) openLobbyBtn.style.display = 'block';
-  else openLobbyBtn.style.display = 'none';
-}
-const origShowHome = showHome;
-showHome = function(){ origShowHome(); updateOpenLobbyBtnVisibility(); };
-const origShowMain = showMain;
-showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
-const origShowLogin = showLogin;
-showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
-
-/* Fast drag + velocity-based flick (kept from previous, used for edge-drag drawer) */
-let dragging = false;
-let startX = 0;
-let lastX = 0;
-let lastT = 0;
-let vx = 0;
-let drawerWidth = 0;
-const EDGE_ZONE = 36;
-const SHORT_THRESHOLD = 30;
-const VELOCITY_THRESHOLD = 0.35;
-
-/* touchstart/drag logic for drawer (unchanged) */
-let touchStarted = false;
-let touchStartX = 0;
-let touchStartY = 0;
-let touchPotentialDrag = false;
-
-function beginDrag(x, initiallyOpen){
-  dragging = true;
-  startX = x;
-  lastX = x;
-  lastT = performance.now();
-  drawerWidth = mobileDrawer.getBoundingClientRect().width || (window.innerWidth * 0.8);
-  mobileDrawer.style.transition = 'none';
-  mobileOverlay.style.transition = 'none';
-  if(!mobileOverlay.classList.contains('show')) mobileOverlay.style.display = 'block';
-  if(!mobileDrawer.classList.contains('show')) mobileDrawer.style.display = 'block';
-  mobileDrawer.classList.remove('show');
-}
-function dragMove(x){
-  if(!dragging) return;
-  const dx = x - startX;
-  const wasOpen = mobileDrawer.classList.contains('show');
-  let translate;
-  if(wasOpen) translate = Math.min(0, dx);
-  else translate = Math.max(-drawerWidth, -drawerWidth + dx);
-  if(translate > 0) translate = 0;
-  if(translate < -drawerWidth) translate = -drawerWidth;
-  mobileDrawer.style.transform = `translateX(${translate}px)`;
-  const openness = 1 - (Math.abs(translate) / drawerWidth);
-  mobileOverlay.style.background = `rgba(0,0,0,${0.45 * openness})`;
-  mobileOverlay.style.display = 'block';
-  const now = performance.now();
-  const dt = now - lastT || 16;
-  vx = (x - lastX) / dt;
-  lastX = x;
-  lastT = now;
-}
-function endDrag(){
-  if(!dragging) return;
-  dragging = false;
-  const style = window.getComputedStyle(mobileDrawer);
-  let translateX = 0;
-  const matrix = style.transform;
-  if(matrix && matrix !== 'none'){
-    try{
-      const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
-      translateX = m ? parseFloat(m[1]) : 0;
-    }catch(e){ translateX = 0; }
-  } else {
-    const m = mobileDrawer.style.transform.match(/translateX\((-?\d+(\.\d+)?)px\)/);
-    translateX = m ? parseFloat(m[1]) : 0;
-  }
-  const wasOpen = mobileDrawer.classList.contains('show');
-  const openDecision = (() => {
-    if(Math.abs(vx) > VELOCITY_THRESHOLD) return vx > 0;
-    if(wasOpen) return !(Math.abs(translateX) > SHORT_THRESHOLD);
-    else return (Math.abs(translateX) < (drawerWidth - SHORT_THRESHOLD));
-  })();
-  mobileDrawer.style.transition = '';
-  mobileOverlay.style.transition = '';
-  if(openDecision){
-    mobileDrawer.style.transform = '';
-    mobileDrawer.classList.add('show');
-    mobileOverlay.classList.add('show');
-    updateOpenLobbyBtnVisibility();
-  } else {
-    mobileDrawer.style.transform = `translateX(-${drawerWidth}px)`;
-    mobileDrawer.classList.remove('show');
-    mobileOverlay.classList.remove('show');
-    setTimeout(()=>{
-      if(!mobileDrawer.classList.contains('show')){
-        mobileOverlay.style.display = 'none';
-        mobileDrawer.style.display = 'none';
-        updateOpenLobbyBtnVisibility();
-      }
-    }, 220);
-  }
-  vx = 0;
-  mobileDrawer.style.willChange = '';
-}
-
-/* touch handlers for drag (unchanged) */
-document.addEventListener('touchstart', (e)=>{
-  if(!isMobile) return;
-  const t = e.touches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-  touchStarted = true;
-  touchPotentialDrag = false;
-  const drawerOpen = mobileDrawer.classList.contains('show');
-  const isHomeVisible = home.style.display !== 'none';
-  if(drawerOpen || (isHomeVisible && touchStartX <= EDGE_ZONE)){
-    touchPotentialDrag = true;
-  }
-}, {passive:true});
-
-document.addEventListener('touchmove', (e)=>{
-  if(!isMobile || !touchStarted) return;
-  const t = e.touches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  if(Math.abs(dy) > Math.abs(dx) + 8){
-    if(dragging) endDrag();
-    touchStarted = false;
-    touchPotentialDrag = false;
-    return;
-  }
-  if(!dragging){
-    if(touchPotentialDrag && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)){
-      const drawerOpen = mobileDrawer.classList.contains('show');
-      beginDrag(t.clientX, drawerOpen);
-      dragMove(t.clientX);
-      return;
-    } else {
-      return;
-    }
-  }
-  if(dragging) dragMove(t.clientX);
-}, {passive:true});
-
-document.addEventListener('touchend', (e)=>{
-  if(!isMobile) return;
-  if(dragging){
-    endDrag();
-  }
-  touchStarted = false;
-  touchPotentialDrag = false;
-});
-
-/* overlay / button events */
 openLobbyBtn.addEventListener('click', openMobileDrawer);
 mobileOverlay.addEventListener('click', closeMobileDrawer);
 closeDrawer.addEventListener('click', closeMobileDrawer);
 
-/* keyboard handling using visualViewport */
-function onViewportResize(){
-  const vv = window.visualViewport;
-  let keyboardHeight = 0;
-  if(vv){
-    keyboardHeight = window.innerHeight - vv.height - (vv.offsetTop || 0);
-    if(keyboardHeight < 0) keyboardHeight = 0;
-  } else {
-    keyboardHeight = Math.max(0, (document._lastInnerHeight || window.innerHeight) - window.innerHeight);
-  }
-  if(keyboardHeight > 0){
-    chat.style.paddingBottom = (keyboardHeight + 84) + 'px';
-    // move replyBox up accordingly
-    replyBox.style.bottom = (keyboardHeight + 84) + 'px';
-    setTimeout(()=> scrollChatToBottom(false), 60);
-  } else {
-    chat.style.paddingBottom = '';
-    replyBox.style.bottom = '72px';
-    scrollChatToBottom();
-  }
-}
-document._lastInnerHeight = window.innerHeight;
-window.addEventListener('resize', ()=> { document._lastInnerHeight = Math.max(document._lastInnerHeight || 0, window.innerHeight); });
-if(window.visualViewport) window.visualViewport.addEventListener('resize', onViewportResize);
-else window.addEventListener('resize', onViewportResize);
+/* keyboard handling for mobile viewport */
+function onViewportResize(){ const vv = window.visualViewport; let keyboardHeight = 0; if(vv){ keyboardHeight = window.innerHeight - vv.height - (vv.offsetTop || 0); if(keyboardHeight < 0) keyboardHeight = 0; } else keyboardHeight = Math.max(0, (document._lastInnerHeight || window.innerHeight) - window.innerHeight); if(keyboardHeight > 0){ chat.style.paddingBottom = (keyboardHeight + 84) + 'px'; replyBox.style.bottom = (keyboardHeight + 84) + 'px'; setTimeout(()=> scrollChatToBottom(false), 60); } else { chat.style.paddingBottom = ''; replyBox.style.bottom = '72px'; scrollChatToBottom(); } }
+window.addEventListener('resize', ()=> { document._lastInnerHeight = Math.max(document._lastInnerHeight || 0, window.innerHeight); }); if(window.visualViewport) window.visualViewport.addEventListener('resize', onViewportResize); else window.addEventListener('resize', onViewportResize);
 msg.addEventListener('focus', ()=> { setTimeout(()=> { onViewportResize(); scrollChatToBottom(false); }, 60); });
 msg.addEventListener('blur', ()=> { setTimeout(()=> onViewportResize(), 60); });
 
-/* rooms refresh polling & snapshot */
-async function refreshRoomsEvery(interval=30000){
-  await loadRooms();
-  setTimeout(()=>refreshRoomsEvery(interval), interval);
-}
+/* rooms refresh and live list */
+async function refreshRoomsEvery(interval=30000){ await loadRooms(); setTimeout(()=>refreshRoomsEvery(interval), interval); }
 refreshRoomsEvery();
+onSnapshot(collection(db,'rooms'), snap=>{ roomList.innerHTML=''; roomListSidebar.innerHTML=''; roomListMobile.innerHTML=''; snap.forEach(d=> renderRoomEntry(d.id)); });
 
-onSnapshot(collection(db,'rooms'), snap => {
-  roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; roomListMobile.innerHTML = '';
-  snap.forEach(d => renderRoomEntry(d.id));
-});
-
-/* utility helpers */
-function escapeHtml(s){
-  if(!s && s !== 0) return '';
-  return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
-}
+/* utilities */
+function escapeHtml(s){ if(!s && s !== 0) return ''; return String(s).replace(/[&<>"']/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function linkify(text){ const urlRe = /((https?:\/\/|www\.)[\w\-@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\w\-@:%_\+.~#?&//=]*))/gi; return text.replace(urlRe, function(match){ let url = match; if(!/^https?:\/\//i.test(url)) url = 'https://' + url; return `<a href="${url}" target="_blank" rel="noopener">${match}</a>`; }); }
+function scrollChatToBottom(instant = true){ try{ if(instant) chat.scrollTop = chat.scrollHeight; else chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); updateScrollBtnVisibility(); }catch(e){} }
+function updateScrollBtnVisibility(){ const atBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 60; if(!atBottom) scrollBottomBtn.style.display='block'; else scrollBottomBtn.style.display='none'; }
+chat.addEventListener('scroll', updateScrollBtnVisibility); scrollBottomBtn.addEventListener('click', ()=> scrollChatToBottom(false));
 
-/* linkify simple URLs to clickable anchors */
-function linkify(text){
-  const urlRe = /((https?:\/\/|www\.)[\w\-@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\w\-@:%_\+.~#?&//=]*))/gi;
-  return text.replace(urlRe, function(match){
-    let url = match;
-    if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
-    return `<a href="${url}" target="_blank" rel="noopener">${match}</a>`;
-  });
-}
+document.addEventListener('visibilitychange', ()=> { if(!document.hidden){} });
 
-function scrollChatToBottom(instant = true){
-  try{
-    if(instant) chat.scrollTop = chat.scrollHeight;
-    else chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
-    updateScrollBtnVisibility();
-  }catch(e){}
-}
-
-/* scroll button logic */
-function updateScrollBtnVisibility(){
-  const atBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 60;
-  if(!atBottom) scrollBottomBtn.style.display = 'block';
-  else scrollBottomBtn.style.display = 'none';
-}
-chat.addEventListener('scroll', updateScrollBtnVisibility);
-scrollBottomBtn.addEventListener('click', ()=> scrollChatToBottom(false));
-
-/* notification helper */
-document.addEventListener('visibilitychange', ()=> {
-  if(!document.hidden) lastMessageTime = Date.now();
-});
-
-/* ensure nick editability on load */
-updateNickEditable();
+/* helper to hide context menu on Escape */
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') hideContextMenu(); });
 
 </script>
 </body>
