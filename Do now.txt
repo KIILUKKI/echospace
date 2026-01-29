@@ -17,3 +17,7 @@ Komennot:
 → Nick rolled 🎲 2 + 🎲 6 = 8
 /coin 
 → kruuna/klaava
+/tableflip         
+→ (╯°□°）╯︵ ┻━┻
+/shrug             
+→ ¯\_(ツ)_/¯
