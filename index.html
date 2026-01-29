@@ -86,6 +86,9 @@
 .msg:hover .reply-btn{opacity:1}
 .reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px}
 
+/* edited note */
+.edited-note{font-size:12px;color:var(--muted);margin-left:8px}
+
 /* typing indicator (between chat and input) */
 #typingIndicator{padding:6px 12px;color:var(--muted);font-size:13px;min-height:18px;display:none}
 
@@ -270,11 +273,14 @@ button, .iconbtn{outline: none}
 /* ===================
    Korjattu versio:
    - incremental rendering (docChanges) -> pienempi viive
-   - /clear ja /delete parannettu
+   - /clear ja /delete siirretty handleCommand:iin (toimii nyt)
+   - lisätty /delet alias
+   - lisätty /help (näytetään vain sinulle alertissa)
+   - muokattuihin viesteihin lisätään editedNote: "reply teksti." ja se näkyy viestin perässä
    - replyBox absoluuttinen: ei pomppaa alhaalta
    - käyttäjän väri tallennetaan Firestoreen users-kokoelmaan
    - kevyempi näkyvyyden/scrollin hallinta
-   - Tyyppi-ilmoitus korjattu ja näkyvyyden hallinta
+   - Tyyppi-ilmoitus korjattu ja lokalisoitu (suomi)
    - Oikean klikin valikko (dropdown) lisätty oman viestin edit/delete:ksi
    =================== */
 
@@ -669,7 +675,12 @@ async function enterRoom(r){
       if(tMs && (now - tMs) < 4000) usersTyping.push(d.id);
     });
     if(usersTyping.length){
-      typingIndicator.textContent = usersTyping.join(', ') + ' is typing...';
+      // localized Finnish typing indicator
+      let txt = '';
+      if(usersTyping.length === 1) txt = `${usersTyping[0]} kirjoittaa...`;
+      else if(usersTyping.length === 2) txt = `${usersTyping[0]} ja ${usersTyping[1]} kirjoittavat...`;
+      else txt = `${usersTyping.slice(0,3).join(', ')} ym. kirjoittavat...`;
+      typingIndicator.textContent = txt;
       typingIndicator.style.display = 'block';
     } else {
       typingIndicator.textContent = '';
@@ -687,6 +698,7 @@ function makeMessageElement(id, m){
 
   const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
   const safeTextHtml = linkify(escapeHtml(m.text || ''));
+  const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : '';
 
   el.innerHTML = `
     <div class="avatar" style="background:${m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>
@@ -694,7 +706,7 @@ function makeMessageElement(id, m){
       ${replyHtml}
       <b class="msg-sender" style="color:${m.color || '#999'};cursor:pointer">${escapeHtml(m.name)}</b>
       <span class="time">${m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
-      <div class="msg-text">${safeTextHtml}</div>
+      <div class="msg-text">${safeTextHtml}${editedNoteHtml}</div>
       <div class="reply-btn" data-name="${escapeAttr(m.name)}" data-text="${escapeAttr(m.text)}">reply</div>
     </div>
   `;
@@ -797,6 +809,7 @@ function updateMessage(id, m){
   if(!el) { renderMessage(id, m); return; }
   const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
   const safeTextHtml = linkify(escapeHtml(m.text || ''));
+  const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : '';
   const avatar = el.querySelector('.avatar');
   const sender = el.querySelector('.msg-sender');
   const time = el.querySelector('.time');
@@ -804,7 +817,7 @@ function updateMessage(id, m){
   if(avatar) avatar.style.background = m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
   if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; }
   if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-  if(msgText) msgText.innerHTML = safeTextHtml;
+  if(msgText) msgText.innerHTML = safeTextHtml + editedNoteHtml;
   // reply preview update
   const replyPrev = el.querySelector('.reply-preview');
   if(replyPrev && !m.reply) replyPrev.remove();
@@ -826,7 +839,7 @@ function showEditDeleteMenu(x,y,msgId, currentText){
     ev.stopPropagation();
     const newText = prompt('Edit message', currentText);
     if(newText == null) { hideContextMenu(); return; }
-    try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText }).catch(console.error); }catch(e){}
+    try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText, editedNote: 'reply teksti.' }).catch(console.error); }catch(e){}
     hideContextMenu();
   };
   contextMenu.appendChild(editBtn);
@@ -877,7 +890,7 @@ function attachMobileInteractions(el, msgId, messageData){
         if(choice.toLowerCase().startsWith('e')){
           const newText = prompt('Edit message', messageData.text);
           if(newText == null) return;
-          updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText}).catch(console.error);
+          updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText, editedNote: 'reply teksti.'}).catch(console.error);
         } else if(choice.toLowerCase().startsWith('d')){
           if(confirm('Delete this message?')) deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error);
         }
@@ -976,7 +989,66 @@ msg.addEventListener('keydown', async (e)=>{
     return;
   }
 
-  if(textRaw === '/clear'){
+  // compute color deterministically
+  const colorToSend = (localStorage.getItem('session') && !localStorage.getItem('session').startsWith('Guest')) ? (localStorage.getItem('nickColor') || '#58a6ff') : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
+
+  await addDoc(collection(db,'rooms',room,'messages'), {
+    name: localStorage.getItem('nick') || nick,
+    text: textRaw,
+    reply: replyTo,
+    color: colorToSend,
+    time: serverTimestamp()
+  }).catch(console.error);
+  replyTo = null; replyBox.style.display = 'none';
+});
+
+/* command processor */
+async function handleCommand(cmdText){
+  const parts = cmdText.split(/\s+/);
+  const c = parts[0].toLowerCase();
+  // help: visible only to you -> show via alert
+  if(c === '/help'){
+    const helpText = [
+      "Komennot:",
+      "/help — Näytä tämä lista (vain sinulle).",
+      "/roll [n] — Heitä 1–10 noppaa (oletus 1).",
+      "/coin — Flip coin.",
+      "/tableflip — ™ table flip -efekti.",
+      "/shrug — ¯\\_(ツ)_/¯",
+      "/clear — Poista kaikki viestit huoneesta (vaatii varmistuksen).",
+      "/delete (tai /delet) — Poista huone ja kaikki viestit (vaatii varmistuksen)."
+    ].join("\n\n");
+    alert(helpText);
+    return;
+  }
+
+  if(c === '/roll'){
+    let n = 1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1));
+    const rolls = [];
+    for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1);
+    const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`;
+    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
+    return;
+  }
+  if(c === '/coin'){
+    const r = Math.random() < 0.5 ? 'Heads' : 'Tails';
+    const txt = `${localStorage.getItem('nick')||nick} flipped a coin → ${r}`;
+    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
+    return;
+  }
+  if(c === '/tableflip'){
+    const txt = `${localStorage.getItem('nick')||nick} (╯°□°）╯︵ ┻━┻`;
+    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
+    return;
+  }
+  if(c === '/shrug'){
+    const txt = `${localStorage.getItem('nick')||nick} ¯\\_(ツ)_/¯`;
+    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
+    return;
+  }
+
+  // /clear: poistaa viestit (kysy varmistus)
+  if(c === '/clear'){
     if(!confirm('Poistetaanko kaikki viestit tästä huoneesta?')) return;
     try{
       const msgs = await getDocs(collection(db,'rooms',room,'messages'));
@@ -991,7 +1063,9 @@ msg.addEventListener('keydown', async (e)=>{
     }catch(e){ console.error('/clear error', e); }
     return;
   }
-  if(textRaw === '/delete'){
+
+  // /delete or /delet: delete room and messages (kysy varmistus)
+  if(c === '/delete' || c === '/delet'){
     if(!confirm('Poistetaanko huone ja kaikki viestit?')) return;
     try{
       // delete typing docs
@@ -1018,48 +1092,7 @@ msg.addEventListener('keydown', async (e)=>{
     return;
   }
 
-  // compute color deterministically
-  const colorToSend = (localStorage.getItem('session') && !localStorage.getItem('session').startsWith('Guest')) ? (localStorage.getItem('nickColor') || '#58a6ff') : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
-
-  await addDoc(collection(db,'rooms',room,'messages'), {
-    name: localStorage.getItem('nick') || nick,
-    text: textRaw,
-    reply: replyTo,
-    color: colorToSend,
-    time: serverTimestamp()
-  }).catch(console.error);
-  replyTo = null; replyBox.style.display = 'none';
-});
-
-/* command processor */
-async function handleCommand(cmdText){
-  const parts = cmdText.split(/\s+/);
-  const c = parts[0].toLowerCase();
-  if(c === '/roll'){
-    let n = 1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1));
-    const rolls = [];
-    for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1);
-    const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/coin'){
-    const r = Math.random() < 0.5 ? 'Heads' : 'Tails';
-    const txt = `${localStorage.getItem('nick')||nick} flipped a coin → ${r}`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/tableflip'){
-    const txt = `${localStorage.getItem('nick')||nick} (╯°□°）╯︵ ┻━┻`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  if(c === '/shrug'){
-    const txt = `${localStorage.getItem('nick')||nick} ¯\\_(ツ)_/¯`;
-    await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
-    return;
-  }
-  // unknown command -> echo
+  // unknown command -> echo to system
   await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
 }
 
