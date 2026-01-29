@@ -276,7 +276,7 @@ button, .iconbtn{outline: none}
    - /clear ja /delete siirretty handleCommand:iin (toimii nyt)
    - lisätty /delet alias
    - lisätty /help (näytetään vain sinulle alertissa)
-   - muokattuihin viesteihin lisätään editedNote: "reply teksti." ja se näkyy viestin perässä
+   - muokattuihin viesteihin lisätään editedNote: "Edited" ja se näkyy viestin perässä
    - replyBox absoluuttinen: ei pomppaa alhaalta
    - käyttäjän väri tallennetaan Firestoreen users-kokoelmaan
    - kevyempi näkyvyyden/scrollin hallinta
@@ -839,7 +839,7 @@ function showEditDeleteMenu(x,y,msgId, currentText){
     ev.stopPropagation();
     const newText = prompt('Edit message', currentText);
     if(newText == null) { hideContextMenu(); return; }
-    try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText, editedNote: 'reply teksti.' }).catch(console.error); }catch(e){}
+    try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText, editedNote: 'Edited' }).catch(console.error); }catch(e){}
     hideContextMenu();
   };
   contextMenu.appendChild(editBtn);
@@ -890,7 +890,7 @@ function attachMobileInteractions(el, msgId, messageData){
         if(choice.toLowerCase().startsWith('e')){
           const newText = prompt('Edit message', messageData.text);
           if(newText == null) return;
-          updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText, editedNote: 'reply teksti.'}).catch(console.error);
+          updateDoc(doc(db,'rooms',room,'messages',msgId), {text: newText, editedNote: 'Edited'}).catch(console.error);
         } else if(choice.toLowerCase().startsWith('d')){
           if(confirm('Delete this message?')) deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error);
         }
