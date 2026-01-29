@@ -23,11 +23,22 @@
   #app{width:100%;height:100%;position:relative;overflow:hidden}
 
 /* SETTINGS GEAR (top-right) */
+#howBtn{position:fixed;top:12px;right:52px;background:transparent;border:0;color:var(--text);font-size:14px;padding:8px;border-radius:8px;cursor:pointer;z-index:92}
+#howBtn:hover{background:rgba(255,255,255,0.02)}
 #settingsBtn{position:fixed;top:12px;right:12px;background:transparent;border:0;color:var(--text);font-size:20px;padding:10px;border-radius:10px;cursor:pointer;z-index:90}
 .settings-menu{position:fixed;top:52px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:8px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:91}
 .settings-menu.show{display:block}
 .settings-menu button{display:block;width:100%;padding:8px 12px;background:transparent;border:0;color:var(--text);text-align:left;border-radius:8px;cursor:pointer}
 .settings-menu button:hover{background:rgba(255,255,255,0.03)}
+
+/* HOW TO PANEL (left of settings) */
+.how-menu{position:fixed;top:52px;right:52px;width:360px;max-height:60vh;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.6);display:none;z-index:93;overflow:auto}
+.how-menu.show{display:block}
+.how-menu h3{margin:0 0 8px 0;font-size:15px}
+.how-menu .section{margin-bottom:10px;font-size:13px;color:var(--muted)}
+.how-menu .section b{color:var(--text)}
+.how-menu .close-how{display:block;margin-top:8px;padding:8px;border-radius:8px;background:transparent;border:0;color:var(--text);cursor:pointer;text-align:right}
+.how-menu .close-how:hover{background:rgba(255,255,255,0.02)}
 
 /* PROFILE CARD */
 .profile-card{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:92;width:220px}
@@ -155,11 +166,66 @@
 <body>
 <div id="app">
 
+  <!-- HOW TO button (left of settings gear) -->
+  <button id="howBtn" title="How To">How To</button>
+
   <!-- SETTINGS GEAR -->
   <button id="settingsBtn" title="Settings">⚙️</button>
   <div id="settingsMenu" class="settings-menu" aria-hidden="true">
     <button id="settingsLogout">Logout</button>
     <button id="settingsDelete">Delete user</button>
+  </div>
+
+  <!-- HOW TO PANEL -->
+  <div id="howMenu" class="how-menu" aria-hidden="true">
+    <h3>How to use — Features & Tips</h3>
+    <div class="section"><b>Getting started</b><br>
+      • Create or join a room using the "Create / Join Room" button.<br>
+      • Pick a nickname and color. Guests are auto-assigned a grey color.</div>
+
+    <div class="section"><b>Rooms</b><br>
+      • Rooms list is on the left (desktop) or in the drawer (mobile).<br>
+      • Use the lobby size control to change left panel width.</div>
+
+    <div class="section"><b>Sending messages</b><br>
+      • Type a message and press Enter to send.<br>
+      • Use the emoji picker (button next to input) to insert emojis.</div>
+
+    <div class="section"><b>Replying</b><br>
+      • Desktop: Hover a message and click "reply" to reply to it.<br>
+      • Mobile: Swipe a message to the right (short swipe reveals reply preview) to start a reply; or tap the reply button.</div>
+
+    <div class="section"><b>Edit & Delete</b><br>
+      • Your messages have a three-dot "more" button at the far right — open it for Edit and Delete.<br>
+      • Mobile: Long-press your message for a quick edit/delete prompt.</div>
+
+    <div class="section"><b>Typing & Seen receipts</b><br>
+      • Typing indicator shows who is currently typing in the room.<br>
+      • Hover a message (desktop) to see a tooltip with users who have seen it.</div>
+
+    <div class="section"><b>Commands</b><br>
+      • /help — Shows local help (only visible to you).<br>
+      • /roll [n], /coin, /tableflip, /shrug — Fun commands.<br>
+      • /clear — Clear messages in the room (confirmation required).<br>
+      • /delete — Delete the room and messages (confirmation required).</div>
+
+    <div class="section"><b>Profile card</b><br>
+      • Hover a sender name (desktop) or tap it (mobile) to open a profile card with color and join date.</div>
+
+    <div class="section"><b>Mobile specifics</b><br>
+      • Drawer: swipe from the left edge or use the blue button to open the room drawer.<br>
+      • On-screen keyboard: input and reply box move to stay visible; the chat will auto-scroll when appropriate.<br>
+      • Swipe-to-reply moves only avatar/action icons; message text stays fixed to avoid overlap.</div>
+
+    <div class="section"><b>Desktop specifics</b><br>
+      • Lobby and chat sidebar remain visible; right-click context menu is replaced by the three-dot menu for edits.<br>
+      • Hover interactions show profile and seen receipts.</div>
+
+    <div class="section"><b>Account notes</b><br>
+      • Login/Register stores credentials locally (for demo). Guests are labeled "Guest####".<br>
+      • Settings gear lets you logout or delete your account (local storage + optional cloud doc removal).</div>
+
+    <button id="closeHow" class="close-how">Close</button>
   </div>
 
   <!-- PROFILE CARD (also used when hovering/clicking a user) -->
@@ -277,8 +343,8 @@
 
 <script type="module">
 /* ===================
-   English UI + nicer emoji button.
-   Minimal changes: text labels/prompts/messages -> English; emoji button styling/content updated.
+   English UI + nicer emoji button + "How To" panel (minimal changes).
+   How To content enumerates features and mobile/desktop usage.
    Functional behavior preserved.
    =================== */
 
@@ -298,6 +364,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 /* DOM refs */
+const howBtn = document.getElementById('howBtn');
+const howMenu = document.getElementById('howMenu');
+
 const login = document.getElementById('login');
 const home = document.getElementById('home');
 const main = document.getElementById('main');
@@ -436,46 +505,23 @@ function updateNickEditable(){
   }
 }
 
-/* login */
-loginBtn.onclick = async () => {
-  const u = loginUser.value.trim();
-  const p = loginPass.value;
-  if(!u || !p) return alert('Please fill both fields');
-  if(users[u] && users[u] !== p) return alert('Wrong password');
-  users[u] = p;
-  localStorage.setItem('users',JSON.stringify(users));
-  localStorage.setItem('session',u);
-  nickInput.value = u;
-  localStorage.setItem('nick', u);
-  // write user doc with color/joined if not exists
-  const userRef = doc(db,'users',u);
-  try{
-    const snap = await getDoc(userRef);
-    const colorToSave = localStorage.getItem('nickColor') || '#58a6ff';
-    if(!snap.exists()){
-      await setDoc(userRef, { color: colorToSave, joined: serverTimestamp() });
-    } else {
-      // ensure color saved
-      await updateDoc(userRef, { color: colorToSave }).catch(()=>{});
-    }
-    userCache.set(u, { color: colorToSave });
-  }catch(e){ console.warn('user save err', e); }
-  showHome();
-};
-demoBtn.onclick = async () => {
-  const guest = 'Guest' + Math.floor(Math.random()*10000);
-  localStorage.setItem('session', guest);
-  nickInput.value = guest;
-  localStorage.setItem('nick', guest);
-  localStorage.setItem('nickColor', getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6');
-  // record guest in users collection for profile display (no sensitive data)
-  try{
-    const userRef = doc(db,'users',guest);
-    if(!(await getDoc(userRef)).exists()) await setDoc(userRef, { color: getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(), joined: serverTimestamp() });
-    userCache.set(guest, { color: getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() });
-  }catch(e){}
-  showHome();
-};
+/* HOW TO toggle handlers */
+howBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const open = howMenu.classList.toggle('show');
+  howMenu.setAttribute('aria-hidden', !open);
+  // hide settings/profile/context when opening
+  if(open){
+    settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true');
+    profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
+    contextMenu.style.display = 'none';
+  }
+});
+document.getElementById('closeHow').addEventListener('click', (e) => {
+  e.stopPropagation();
+  howMenu.classList.remove('show');
+  howMenu.setAttribute('aria-hidden','true');
+});
 
 /* SETTINGS menu (gear) */
 settingsBtn.addEventListener('click', (e) => {
@@ -483,6 +529,8 @@ settingsBtn.addEventListener('click', (e) => {
   const open = settingsMenu.classList.toggle('show');
   settingsMenu.setAttribute('aria-hidden', !open);
   profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
+  // hide how menu if open
+  howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true');
 });
 settingsMenu.addEventListener('click', (e) => e.stopPropagation());
 document.addEventListener('click', () => {
@@ -496,6 +544,8 @@ document.addEventListener('click', () => {
   }
   // hide context menu too
   if(contextMenu.style.display === 'block') contextMenu.style.display = 'none';
+  // hide How To panel
+  if(howMenu.classList.contains('show')){ howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
 });
 
 /* Logout via settings */
