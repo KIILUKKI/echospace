@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -102,6 +102,25 @@
 #emojiPicker .tabbtn{padding:6px 8px;border-radius:8px;border:none;background:transparent;color:var(--text);cursor:pointer}
 #emojiPicker .tabbtn.active{background:rgba(255,255,255,0.03)}
 #emojiPicker div.emoji{cursor:pointer;font-size:18px}
+
+/* nicer emoji button */
+#emojiBtn{
+  background: linear-gradient(180deg, rgba(88,166,255,0.10), rgba(88,166,255,0.03));
+  border: 1px solid rgba(88,166,255,0.10);
+  padding: 6px;
+  border-radius: 10px;
+  width:44px;
+  height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  cursor:pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  color: var(--accent);
+}
+#emojiBtn:active{transform:scale(0.98)}
+.emoji-icon{font-size:18px;line-height:1;transform:translateY(1px);}
 
 /* MORE (three-dots) button next to reply — positioned at the far right (z-axis on top) */
 .more-btn{position:absolute;right:12px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px;z-index:12;transform:none}
@@ -223,7 +242,7 @@
 
         <div id="replyBox"></div>
         <div id="inputBar">
-          <button id="emojiBtn">😊</button>
+          <button id="emojiBtn" aria-label="Emoji picker"><span class="emoji-icon" aria-hidden="true">😊</span></button>
           <input id="msg" placeholder="Message... (/clear /delete)" autocomplete="off">
           <div id="emojiPicker"></div>
         </div>
@@ -258,9 +277,9 @@
 
 <script type="module">
 /* ===================
-   Korjattu versio (vain attachMobileInteractions muokattu niin, että
-   texti ei liiku X-akselilla swipe-to-replyssä).
-   Muutokset minimoitu.
+   English UI + nicer emoji button.
+   Minimal changes: text labels/prompts/messages -> English; emoji button styling/content updated.
+   Functional behavior preserved.
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -270,7 +289,7 @@ import {
   onSnapshot, serverTimestamp, deleteDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* Firebase init - vaihda oma config tarvittaessa */
+/* Firebase init - replace config if needed */
 const firebaseConfig = {
   apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
   projectId:"chat-fc8ef"
@@ -421,8 +440,8 @@ function updateNickEditable(){
 loginBtn.onclick = async () => {
   const u = loginUser.value.trim();
   const p = loginPass.value;
-  if(!u || !p) return alert('Täytä molemmat kentät');
-  if(users[u] && users[u] !== p) return alert('Väärä salasana');
+  if(!u || !p) return alert('Please fill both fields');
+  if(users[u] && users[u] !== p) return alert('Wrong password');
   users[u] = p;
   localStorage.setItem('users',JSON.stringify(users));
   localStorage.setItem('session',u);
@@ -490,9 +509,9 @@ settingsLogout.addEventListener('click', () => {
 settingsDelete.addEventListener('click', async () => {
   settingsMenu.classList.remove('show');
   const session = localStorage.getItem('session');
-  if(!session){ alert('Ei kirjautunutta käyttäjää'); return; }
-  if(session.startsWith('Guest')){ alert('Guest-tiliä ei voi poistaa.'); return; }
-  if(!confirm(`Poistetaanko käyttäjä "${session}" ja sen tallennetut tunnukset? Tämä ei ole peruutettavissa.`)) return;
+  if(!session){ alert('No logged-in user'); return; }
+  if(session.startsWith('Guest')){ alert('Guest account cannot be deleted.'); return; }
+  if(!confirm(`Delete user "${session}" and their stored credentials? This cannot be undone.`)) return;
   try{
     users = JSON.parse(localStorage.getItem('users')||'{}');
     delete users[session];
@@ -572,9 +591,9 @@ createRoomBtn.onclick = async ()=> {
 async function joinRoom(r){
   const ref = doc(db,'rooms',r);
   const snap = await getDoc(ref);
-  if(!snap.exists()) return alert("Huonetta ei löytynyt");
+  if(!snap.exists()) return alert("Room not found");
   const pass = prompt('Password');
-  if(pass !== snap.data().password) return alert('Väärä huoneen salasana');
+  if(pass !== snap.data().password) return alert('Wrong room password');
 
   // Save nick/color
   nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000));
@@ -654,11 +673,11 @@ async function enterRoom(r){
       if(tMs && (now - tMs) < 4000) usersTyping.push(d.id);
     });
     if(usersTyping.length){
-      // localized Finnish typing indicator
+      // English typing indicator
       let txt = '';
-      if(usersTyping.length === 1) txt = `${usersTyping[0]} kirjoittaa...`;
-      else if(usersTyping.length === 2) txt = `${usersTyping[0]} ja ${usersTyping[1]} kirjoittavat...`;
-      else txt = `${usersTyping.slice(0,3).join(', ')} ym. kirjoittavat...`;
+      if(usersTyping.length === 1) txt = `${usersTyping[0]} is typing...`;
+      else if(usersTyping.length === 2) txt = `${usersTyping[0]} and ${usersTyping[1]} are typing...`;
+      else txt = `${usersTyping.slice(0,3).join(', ')} and others are typing...`;
       typingIndicator.textContent = txt;
       typingIndicator.style.display = 'block';
     } else {
@@ -857,7 +876,7 @@ function showEditDeleteMenu(x,y,msgId, currentText){
   delBtn.textContent = 'Delete';
   delBtn.onclick = async (ev)=>{
     ev.stopPropagation();
-    if(confirm('Poistetaanko tämä viesti?')){
+    if(confirm('Delete this message?')){
       try{ await deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error); }catch(e){}
     }
     hideContextMenu();
@@ -883,7 +902,7 @@ function hideContextMenu(){
 }
 
 /* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply
-   IMPORTANT: changed so that text (msg-text) does NOT move on X-axis.
+   IMPORTANT: text (msg-text) does NOT move on X-axis.
    We only translate avatar and action buttons so the visible content stays fixed.
 */
 function attachMobileInteractions(el, msgId, messageData){
@@ -1013,7 +1032,7 @@ function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; }
 msg.addEventListener('keydown', async (e)=>{
   if(e.key !== 'Enter') return;
   const textRaw = msg.value.trim(); msg.value = ''; if(!textRaw) return;
-  if(!room){ alert('Et ole huoneessa'); return; }
+  if(!room){ alert('You are not in a room'); return; }
   deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{});
 
   // Commands handling
@@ -1042,14 +1061,14 @@ async function handleCommand(cmdText){
   // help: visible only to you -> show via alert
   if(c === '/help'){
     const helpText = [
-      "Komennot:",
-      "/help — Näytä tämä lista (vain sinulle).",
-      "/roll [n] — Heitä 1–10 noppaa (oletus 1).",
-      "/coin — Flip coin.",
-      "/tableflip — ™ table flip -efekti.",
+      "Commands:",
+      "/help — Show this list (only visible to you).",
+      "/roll [n] — Roll 1–10 dice (default 1).",
+      "/coin — Flip a coin.",
+      "/tableflip — Table flip effect.",
       "/shrug — ¯\\_(ツ)_/¯",
-      "/clear — Poista kaikki viestit huoneesta (vaatii varmistuksen).",
-      "/delete (tai /delet) — Poista huone ja kaikki viestit (vaatii varmistuksen)."
+      "/clear — Delete all messages in the room (confirmation required).",
+      "/delete (or /delet) — Delete the room and all messages (confirmation required)."
     ].join("\n\n");
     alert(helpText);
     return;
@@ -1080,9 +1099,9 @@ async function handleCommand(cmdText){
     return;
   }
 
-  // /clear: poistaa viestit (kysy varmistus)
+  // /clear: delete messages (ask for confirmation)
   if(c === '/clear'){
-    if(!confirm('Poistetaanko kaikki viestit tästä huoneesta?')) return;
+    if(!confirm('Delete all messages in this room?')) return;
     try{
       const msgs = await getDocs(collection(db,'rooms',room,'messages'));
       for(const d of msgs.docs){
@@ -1097,9 +1116,9 @@ async function handleCommand(cmdText){
     return;
   }
 
-  // /delete or /delet: delete room and messages (kysy varmistus)
+  // /delete or /delet: delete room and messages (ask for confirmation)
   if(c === '/delete' || c === '/delet'){
-    if(!confirm('Poistetaanko huone ja kaikki viestit?')) return;
+    if(!confirm('Delete the room and all messages?')) return;
     try{
       // delete typing docs
       const typingDocs = await getDocs(collection(db,'rooms',room,'typing'));
@@ -1129,7 +1148,7 @@ async function handleCommand(cmdText){
   await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
 }
 
-/* emojis picker (GIFs removed) */
+/* emojis picker */
 const emojiList = [
 "😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
 "😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
