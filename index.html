@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Echo</title>
+<title>Echo — Desktop only</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="256x256" href="images/echo_space_favicon.png">
 <style>
@@ -15,7 +15,7 @@
     --card:#21262d;
     --text:#e6edf3;
     --lobby-width:260px;
-    --drawer-duration: 200ms;
+    --drawer-duration: 200ms; /* kept but drawer removed */
     --drawer-ease: cubic-bezier(.16,.84,.24,1);
     --guest-gray: #9aa0a6;
   }
@@ -23,7 +23,7 @@
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
   #app{width:100%;height:100%;position:relative;overflow:hidden}
 
-/* TOP-RIGHT CONTROLS */
+/* TOP-RIGHT CONTROLS: container to avoid overlapping */
 #topRightControls{
   position:fixed;
   top:12px;
@@ -31,16 +31,38 @@
   display:flex;
   gap:10px;
   align-items:center;
-  z-index:120;
+  z-index:120; /* high so menus appear below but above main UI */
   pointer-events:auto;
 }
+
+/* HOW / FULL / SETTINGS (buttons inside container) */
 #howBtn, #fullBtn, #settingsBtn{
-  background:transparent;border:0;color:var(--text);font-size:14px;padding:8px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;min-height:40px;min-width:40px;justify-content:center;box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  background:transparent;
+  border:0;
+  color:var(--text);
+  font-size:14px;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+  min-width:40px;
+  justify-content:center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
 }
 #howBtn:hover, #fullBtn:hover, #settingsBtn:hover{ background:rgba(255,255,255,0.02) }
-#fullBtn{ font-size:15px;padding:10px 14px;border-radius:12px;font-weight:600; }
 
-/* Menus */
+/* Make fullscreen button slightly larger / more prominent */
+#fullBtn{
+  font-size:15px;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:600;
+}
+
+/* SETTINGS MENU & HOW MENU anchored under container (aligned to right) */
 .settings-menu{position:fixed;top:56px;right:12px;background:var(--panel);border:1px solid #0d1117;padding:8px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);display:none;z-index:119}
 .settings-menu.show{display:block}
 .settings-menu button{display:block;width:100%;padding:8px 12px;background:transparent;border:0;color:var(--text);text-align:left;border-radius:8px;cursor:pointer}
@@ -82,7 +104,7 @@
 #lobbyControls{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .iconbtn{background:transparent;border:0;color:var(--text);padding:6px;border-radius:8px;cursor:pointer}
 .iconbtn:active{transform:scale(0.98)}
-/* Removed #lobbySizeBtn element */
+#lobbySizeBtn{font-weight:700;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03)}
 
 /* ================== Home Center ================== */
 #homeCenter {
@@ -100,8 +122,11 @@
 }
 
 #nickRow { display:flex; gap:12px; width:100%; max-width:420px; align-items:center; margin-bottom:20px }
-#nick { flex:1;padding:12px;border-radius:10px;border:none;background:var(--card);color:var(--text) }
-#createRoom { padding:14px 28px;border-radius:12px;background:var(--accent);color:#000;border:none;font-weight:700;cursor:pointer}
+#nick { flex:1; padding:12px; border-radius:10px; border:none; background:var(--card); color:var(--text) }
+#nick[readonly]{ opacity:0.7 }
+#nickColorWrapper{ width:42px; height:42px; position:relative }
+#nickColorCircle{ width:100%; height:100%; border-radius:50%; border:2px solid #fff; cursor:pointer }
+.createRoom{ padding:14px 28px; border-radius:12px; background:var(--accent); color:#000; border:none; font-weight:700; cursor:pointer }
 
 /* MAIN chat */
 #main{display:flex;flex-direction:column}
@@ -116,75 +141,65 @@
 .message{display:flex;gap:10px;align-items:flex-start;transition:transform 160ms ease}
 .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000}
 .msg{background:var(--panel);padding:10px 96px 10px 14px;border-radius:12px;position:relative;max-width:70%}
-.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:100%;}
+.msg-text{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:100%}
 .time{font-size:11px;color:var(--muted);margin-left:6px}
 .reply-btn{position:absolute;right:52px;top:8px;font-size:12px;color:var(--muted);cursor:pointer;opacity:0}
 .msg:hover .reply-btn{opacity:1}
-.reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px;max-width:calc(100% - 96px);}
-
-/* edited note */
+.reply-preview{background:rgba(255,255,255,0.02);border-left:3px solid var(--accent);padding:6px;font-size:13px;margin-bottom:8px;border-radius:6px;max-width:calc(100% - 96px)}
 .edited-note{font-size:12px;color:var(--muted);margin-left:8px;display:inline-block}
 
 /* typing indicator */
-#typingIndicator{ display:none; position:relative; padding:8px 12px; margin:0 12px 8px 12px; border-radius:12px; background: linear-gradient(90deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.02); color:var(--muted); font-size:13px; align-items:center; gap:10px; z-index:90; transition:opacity 180ms ease, transform 180ms ease; display:flex; align-items:center;}
-
-/* typing avatars/dots */
+#typingIndicator{ display:none; position:relative; padding:8px 12px; margin:0 12px 8px 12px; border-radius:12px; background: linear-gradient(90deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.02); color:var(--muted); font-size:13px; align-items:center; gap:10px; z-index:90; transition:opacity 180ms ease, transform 180ms ease; display:flex; align-items:center }
 .typing-avatars{display:flex;gap:6px;align-items:center}
-.typing-avatars .typ-av{ width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;border:2px solid rgba(255,255,255,0.04);font-size:12px;background:var(--guest-gray); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+.typing-avatars .typ-av{ width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;border:2px solid rgba(255,255,255,0.04);font-size:12px;background:var(--guest-gray); box-shadow: 0 6px 18px rgba(0,0,0,0.35) }
 .typing-text{display:flex;flex-direction:row;align-items:center;gap:8px;color:var(--muted);font-size:13px}
 .typing-dots{display:inline-flex;gap:6px;align-items:flex-end;height:14px}
-.typing-dots span{ width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--muted);opacity:0.45; transform: translateY(0); animation: typing-bounce 1s infinite; }
-.typing-dots span:nth-child(1){animation-delay:0s} .typing-dots span:nth-child(2){animation-delay:0.12s} .typing-dots span:nth-child(3){animation-delay:0.24s}
-@keyframes typing-bounce{ 0% { transform: translateY(0); opacity:0.45; } 40% { transform: translateY(-6px); opacity:1; } 80% { transform: translateY(0); opacity:0.45; } 100% { transform: translateY(0); opacity:0.45; } }
-
-/* smaller on tiny screens */
-@media (max-width:480px){
-  .typing-avatars .typ-av{ width:24px;height:24px;font-size:11px }
-  #typingIndicator{ margin:0 10px 8px 10px; padding:8px; border-radius:10px }
-  #replyBox { bottom:72px; width:calc(100% - 24px) }
-}
-
-/* reply box */
-#replyBox{ display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:86px; width:calc(100% - 36px); max-width:920px; background:var(--card); padding:8px 14px; font-size:13px; color:var(--text); border-radius:10px; z-index:999; box-shadow:0 8px 26px rgba(0,0,0,0.45); box-sizing:border-box; }
+.typing-dots span{ width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--muted);opacity:0.45; transform: translateY(0); animation: typing-bounce 1s infinite }
+.typing-dots span:nth-child(1){animation-delay:0s}
+.typing-dots span:nth-child(2){animation-delay:0.12s}
+.typing-dots span:nth-child(3){animation-delay:0.24s}
+@keyframes typing-bounce{0%{transform:translateY(0);opacity:0.45}40%{transform:translateY(-6px);opacity:1}80%{transform:translateY(0);opacity:0.45}100%{transform:translateY(0);opacity:0.45}}
 
 /* input bar */
+#replyBox{ display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:86px; width:calc(100% - 36px); max-width:920px; background:var(--card); padding:8px 14px; font-size:13px; color:var(--text); border-radius:10px; z-index:999; box-shadow:0 8px 26px rgba(0,0,0,0.45); box-sizing:border-box }
 #inputBar{padding:12px;background:var(--panel);border-top:1px solid #0d1117;display:flex;gap:8px;align-items:center;position:relative;z-index:80}
 #msg{flex:1;padding:12px;border-radius:10px;border:none;background:var(--card);color:var(--text)}
 #emojiPicker{display:none;flex-wrap:wrap;gap:6px;padding:8px;background:var(--card);border-radius:8px;position:absolute;bottom:72px;left:12px;max-width:320px;max-height:300px;overflow:auto}
-#emojiBtn{ background: linear-gradient(180deg, rgba(88,166,255,0.10), rgba(88,166,255,0.03)); border: 1px solid rgba(88,166,255,0.10); padding: 6px; border-radius: 10px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.45); color: var(--accent); }
-.emoji-icon{font-size:18px;line-height:1;transform:translateY(1px);}
+#emojiBtn{ background: linear-gradient(180deg, rgba(88,166,255,0.10), rgba(88,166,255,0.03)); border: 1px solid rgba(88,166,255,0.10); padding: 6px; border-radius: 10px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.45); color: var(--accent) }
 
-/* more button */
+/* MORE button */
 .more-btn{position:absolute;right:12px;top:8px;font-size:16px;color:var(--muted);cursor:pointer;opacity:0;padding:4px;border-radius:6px;z-index:12;transform:none}
 .msg:hover .more-btn{opacity:1}
 
-/* mobile specifics */
-.mobile-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:40;display:none;transition:background var(--drawer-duration) var(--drawer-ease)}
-.mobile-overlay.show{display:block;background:rgba(0,0,0,0.45)}
-.mobile-lobby-drawer{position:fixed;left:0;top:0;height:100%;width:80%;max-width:340px;background:var(--panel);z-index:50;padding:12px;transform:translateX(-110%);transition:transform var(--drawer-duration) var(--drawer-ease),opacity calc(var(--drawer-duration) * 0.9) var(--drawer-ease);opacity:0;will-change:transform}
-.mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
-#openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+/* Floating scroll to bottom button (now centered) */
+#scrollBottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
 
-/* tooltip & context */
+/* simple tooltip for seen receipts */
 .tooltip{position:fixed;padding:6px 8px;background:var(--panel);border:1px solid #0d1117;border-radius:8px;font-size:13px;color:var(--muted);z-index:120;display:none}
+
+/* context menu (right-click) */
 .context-menu{position:fixed;background:var(--panel);border:1px solid #0d1117;padding:6px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.6);display:none;z-index:130}
 .context-menu button{display:block;padding:8px 10px;border:0;background:transparent;color:var(--text);text-align:left;width:160px;border-radius:6px;cursor:pointer}
 .context-menu button:hover{background:rgba(255,255,255,0.03)}
 
-/* thin scrollbars */
+/* custom thin scrollbars for desktop */
 #chat::-webkit-scrollbar, #homeLeft::-webkit-scrollbar, #chatSidebar::-webkit-scrollbar{height:8px;width:8px}
 #chat::-webkit-scrollbar-thumb, #homeLeft::-webkit-scrollbar-thumb, #chatSidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:999px}
 #chat, #homeLeft, #chatSidebar{scrollbar-color: rgba(255,255,255,0.06) transparent;scrollbar-width:thin}
+
 </style>
 
 </head>
 <body>
 <div id="app">
 
-  <!-- TOP-RIGHT CONTROLS -->
+  <!-- TOP-RIGHT CONTROLS CONTAINER -->
   <div id="topRightControls" aria-hidden="false">
+    <!-- HOW TO button -->
     <button id="howBtn" title="How To">How To</button>
+    <!-- FULLSCREEN button -->
     <button id="fullBtn" title="Toggle fullscreen" aria-label="Fullscreen">⤢</button>
+    <!-- SETTINGS GEAR -->
     <button id="settingsBtn" title="Settings">⚙️</button>
   </div>
 
@@ -193,19 +208,53 @@
     <button id="settingsDelete">Delete user</button>
   </div>
 
-  <!-- HOW TO PANEL (content loaded from how.html) -->
+  <!-- HOW TO PANEL -->
   <div id="howMenu" class="how-menu" aria-hidden="true">
     <h3>How to use — Features & Tips</h3>
-    <div id="howMenuContent"><!-- loaded dynamically --></div>
+    <div class="section"><b>Getting started</b><br>
+      • Create or join a room using the "Create / Join Room" button.<br>
+      • Pick a nickname and color. Guests are auto-assigned a grey color.</div>
+
+    <div class="section"><b>Rooms</b><br>
+      • Rooms list is on the left. Use the lobby size control to change left panel width.</div>
+
+    <div class="section"><b>Sending messages</b><br>
+      • Type a message and press Enter to send.<br>
+      • Use the emoji picker (button next to input) to insert emojis.</div>
+
+    <div class="section"><b>Replying</b><br>
+      • Desktop: Hover a message and click "reply" to reply to it.</div>
+
+    <div class="section"><b>Edit & Delete</b><br>
+      • Desktop: Your messages have a three-dot "more" button at the far right — open it for Edit and Delete.</div>
+
+    <div class="section"><b>Typing & Seen receipts</b><br>
+      • Typing indicator shows who is currently typing in the room.<br>
+      • Hover a message (desktop) to see a tooltip with users who have seen it.</div>
+
+    <div class="section"><b>Keyboard shortcuts (desktop)</b><br>
+      • Esc → Close menus<br>
+      • Ctrl/Cmd + Enter → Send message<br>
+      • ? → Open “How To”</div>
+
+    <div class="section"><b>Desktop specifics</b><br>
+      • Lobby and chat sidebar remain visible; three-dot menus are available for edits.<br>
+      • Hover interactions show profile and seen receipts.</div>
+
+    <div class="section"><b>Account notes</b><br>
+      • Login/Register stores credentials locally (for demo). Guests are labeled "Guest####".<br>
+      • Settings gear lets you logout or delete your account (local storage + optional cloud doc removal).</div>
+
     <button id="closeHow" class="close-how">Close</button>
   </div>
 
-  <!-- PROFILE CARD -->
+  <!-- PROFILE CARD (also used when hovering/clicking a user) -->
   <div id="profileCard" class="profile-card" aria-hidden="true">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
       <div id="profileAvatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;background:var(--guest-gray)"></div>
       <div>
         <div id="profileName" style="font-weight:700"></div>
+        <div id="profileJoined" style="font-size:13px;color:var(--muted)"></div>
       </div>
     </div>
     <div class="row"><div>Color</div><div id="profileColor"></div></div>
@@ -222,17 +271,19 @@
 
   <!-- HOME -->
   <div id="home">
+    <!-- Desktop lobby (keeps desktop visible) -->
     <aside id="homeLeft" aria-label="Lobby">
       <div id="lobbyHeader">
         <div id="lobbyTitle">Rooms</div>
         <div id="lobbyControls">
           <button id="lobbyToggle" class="iconbtn" title="Collapse/Expand lobby">◀</button>
-          <!-- Removed A button here per request -->
+          <button id="lobbySizeBtn" class="iconbtn" title="Change lobby size">A</button>
         </div>
       </div>
       <div id="roomList"></div>
     </aside>
 
+    <!-- Center -->
     <main id="homeCenter">
       <div id="nickRow">
         <input id="nick" placeholder="Nickname (saved)">
@@ -243,9 +294,10 @@
       </div>
       <button id="createRoom" class="createRoom">Create / Join Room</button>
       <div style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center;max-width:420px">
-        Swipe from the edge to open the room drawer on mobile.
+        This build is desktop-only; mobile UI removed.
       </div>
     </main>
+
   </div>
 
   <!-- MAIN CHAT -->
@@ -256,7 +308,8 @@
         <div id="roomName">#room</div>
       </div>
       <div style="flex:1"></div>
-      <div style="display:flex;gap:8px;align-items:center"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+      </div>
     </div>
 
     <div id="chatWrapper">
@@ -271,6 +324,7 @@
       <div id="chatWrapperMain">
         <div id="chat"></div>
 
+        <!-- TYPING INDICATOR: appears between chat and input -->
         <div id="typingIndicator" aria-live="polite"></div>
 
         <div id="replyBox"></div>
@@ -281,41 +335,33 @@
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- Mobile overlay and drawer -->
-  <div id="mobileOverlay" class="mobile-overlay" aria-hidden="true"></div>
-  <div id="mobileDrawer" class="mobile-lobby-drawer" aria-hidden="true">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-weight:700">Rooms</div>
-      <button id="closeDrawer" class="iconbtn">✕</button>
-    </div>
-    <div id="roomListMobile"></div>
-  </div>
+  <!-- Floating scroll to bottom button (now centered) -->
+  <button id="scrollBottomBtn" title="Scroll to bottom">↓</button>
 
-  <!-- Blue three-line button (mobile) -->
-  <button id="openLobbyBtn" title="Open lobby">☰</button>
-
-  <!-- tooltip & context menu -->
+  <!-- tooltip element -->
   <div id="tooltip" class="tooltip" aria-hidden="true"></div>
+
+  <!-- context menu element (right-click) -->
   <div id="contextMenu" class="context-menu" aria-hidden="true"></div>
+
 </div>
 
 <script type="module">
-/* Full app JS (firebase + UI) with the requested fixes:
-   - Removed desktop 'A' button and its logic
-   - Drawer won't close when clicking inside; overlay click closes it
-   - Swipe-to-open preserved
-   Everything else preserved from the working code.
+/* Desktop-only build — mobile UI and touch handlers removed.
+   Minimal other changes so original desktop features stay intact.
 */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc, collection,
-  addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc, writeBatch
+  addDoc, getDocs, query, orderBy, where, limit,
+  onSnapshot, serverTimestamp, deleteDoc, updateDoc, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* Firebase config (keep your own keys/config in production) */
+/* Firebase init - replace config if needed */
 const firebaseConfig = {
   apiKey:"AIzaSyDbYLUXJjHQ-V5uFvtyzwq-IwIKM7xTcyc",
   projectId:"chat-fc8ef"
@@ -339,7 +385,6 @@ const loginMsg = document.getElementById('loginMsg');
 
 const roomList = document.getElementById('roomList');
 const roomListSidebar = document.getElementById('roomListSidebar');
-const roomListMobile = document.getElementById('roomListMobile');
 
 const createRoomBtn = document.getElementById('createRoom');
 const nickInput = document.getElementById('nick');
@@ -348,14 +393,10 @@ const nickColorCircle = document.getElementById('nickColorCircle');
 
 const lobby = document.getElementById('homeLeft');
 const lobbyToggle = document.getElementById('lobbyToggle');
+const lobbySizeBtn = document.getElementById('lobbySizeBtn');
 
 const chatSidebar = document.getElementById('chatSidebar');
 const sidebarToggle = document.getElementById('sidebarToggle');
-
-const openLobbyBtn = document.getElementById('openLobbyBtn');
-const mobileOverlay = document.getElementById('mobileOverlay');
-const mobileDrawer = document.getElementById('mobileDrawer');
-const closeDrawer = document.getElementById('closeDrawer');
 
 const chat = document.getElementById('chat');
 const chatWrapperMain = document.getElementById('chatWrapperMain');
@@ -375,8 +416,10 @@ const settingsDelete = document.getElementById('settingsDelete');
 const profileCard = document.getElementById('profileCard');
 const profileAvatar = document.getElementById('profileAvatar');
 const profileName = document.getElementById('profileName');
+const profileJoined = document.getElementById('profileJoined');
 const profileColor = document.getElementById('profileColor');
 
+const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 const tooltip = document.getElementById('tooltip');
 const contextMenu = document.getElementById('contextMenu');
 
@@ -389,61 +432,70 @@ let lastMessageTime = 0;
 let typingTimeout = null;
 let messagesUnsub = null;
 let typingUnsub = null;
-let roomsUnsub = null;
+let roomsUnsub = null; // listener for rooms collection
 
+/* cache for user docs to avoid repeated reads */
 const userCache = new Map();
 
-const isTouch = matchMedia('(pointer:coarse)').matches;
-const isMobile = /Mobi|Android|iPhone|iPad|Windows Phone/.test(navigator.userAgent) || isTouch;
+/* Device detection — forced desktop-only */
+const isTouch = false;
+const isMobile = false;
 
 /* UI init */
 nickColorInput.value = nickColor;
 nickColorCircle.style.background = nickColor;
 nickInput.value = localStorage.getItem('nick') || '';
 
-/* Desktop lobby enforcement */
+/* Ensure desktop lobby visible and cannot be collapsed */
 function enforceDesktopLobby(){
-  if(!isMobile){
-    lobby.style.display = 'block';
-    chatSidebar.style.display = 'block';
-    if(lobbyToggle) lobbyToggle.style.display = 'none';
-    if(sidebarToggle) sidebarToggle.style.display = 'none';
-  } else {
-    lobby.style.display = 'none';
-    chatSidebar.style.display = 'none';
-  }
+  lobby.style.display = 'block';
+  chatSidebar.style.display = 'block';
+  if(lobbyToggle) lobbyToggle.style.display = 'none';
+  if(sidebarToggle) sidebarToggle.style.display = 'none';
 }
 enforceDesktopLobby();
 
-/* Edge-swipe to open (mobile) */
-let edgeSwipeStartX = 0;
-let edgeSwipeActive = false;
-document.addEventListener('touchstart', (e) => {
-  if(!isMobile) return;
-  const t = e.touches[0];
-  edgeSwipeStartX = t.clientX;
-  edgeSwipeActive = (edgeSwipeStartX < 24) && !mobileDrawer.classList.contains('show') && !mobileOverlay.classList.contains('show');
-}, { passive: true });
+/* No-op visibility helper (mobile removed) */
+function updateOpenLobbyBtnVisibility(){ /* intentionally empty for desktop-only build */ }
 
-document.addEventListener('touchmove', (e) => {
-  if(!edgeSwipeActive) return;
-  const t = e.touches[0];
-  const deltaX = t.clientX - edgeSwipeStartX;
-  if(deltaX > 60){
-    openMobileDrawer();
-    edgeSwipeActive = false;
-  }
-}, { passive: true });
+/* Session helpers */
+function showHome(){
+  login.style.display = 'none';
+  home.style.display = 'flex';
+  main.style.display = 'none';
+  if(howBtn) howBtn.style.display = '';
+  if(fullBtn) fullBtn.style.display = '';
+  if(settingsBtn) settingsBtn.style.display = '';
+  updateOpenLobbyBtnVisibility();
+  updateNickEditable();
+}
+function showLogin(){
+  login.style.display = 'flex';
+  home.style.display = 'none';
+  main.style.display = 'none';
+  localStorage.removeItem('session');
+  if(howBtn) howBtn.style.display = 'none';
+  if(fullBtn) fullBtn.style.display = 'none';
+  if(settingsBtn) settingsBtn.style.display = 'none';
+  updateOpenLobbyBtnVisibility();
+  updateNickEditable();
+}
+function showMain(){
+  login.style.display = 'none';
+  home.style.display = 'none';
+  main.style.display = 'flex';
+  if(howBtn) howBtn.style.display = '';
+  if(fullBtn) fullBtn.style.display = '';
+  if(settingsBtn) settingsBtn.style.display = '';
+  updateOpenLobbyBtnVisibility();
+  updateNickEditable();
+}
 
-document.addEventListener('touchend', () => { edgeSwipeActive = false; });
+/* restore session */
+if(localStorage.getItem('session')) showHome();
+else showLogin();
 
-/* session helpers */
-function showHome(){ login.style.display='none'; home.style.display='flex'; main.style.display='none'; if(howBtn) howBtn.style.display=''; if(fullBtn) fullBtn.style.display=''; if(settingsBtn) settingsBtn.style.display=''; updateOpenLobbyBtnVisibility(); updateNickEditable(); }
-function showLogin(){ login.style.display='flex'; home.style.display='none'; main.style.display='none'; localStorage.removeItem('session'); if(howBtn) howBtn.style.display='none'; if(fullBtn) fullBtn.style.display='none'; if(settingsBtn) settingsBtn.style.display='none'; updateOpenLobbyBtnVisibility(); updateNickEditable(); }
-function showMain(){ login.style.display='none'; home.style.display='none'; main.style.display='flex'; if(howBtn) howBtn.style.display=''; if(fullBtn) fullBtn.style.display=''; if(settingsBtn) settingsBtn.style.display=''; updateOpenLobbyBtnVisibility(); updateNickEditable(); }
-
-if(localStorage.getItem('session')) showHome(); else showLogin();
-
+/* update whether nickname is editable (guest cannot change) */
 function updateNickEditable(){
   const session = localStorage.getItem('session') || '';
   if(session.startsWith('Guest')){
@@ -463,478 +515,163 @@ function updateNickEditable(){
   }
 }
 
-/* HOW TO lazy-load */
-howBtn.addEventListener('click', async (e) => {
+/* HOW TO toggle handlers */
+howBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const open = howMenu.classList.toggle('show');
   howMenu.setAttribute('aria-hidden', !open);
-  if(open){
-    settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true');
-    profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
-    contextMenu.style.display = 'none';
-    try{
-      const container = document.getElementById('howMenuContent');
-      if(container && !container.dataset.loaded){
-        const res = await fetch('how.html');
-        if(res.ok){
-          const text = await res.text();
-          container.innerHTML = text;
-        } else {
-          container.innerHTML = '<div class="section">Ohjeita ei voitu ladata.</div>';
-        }
-        container.dataset.loaded = '1';
-      }
-    }catch(_){
-      const container = document.getElementById('howMenuContent'); if(container) container.innerHTML = '<div class="section">Ohjeita ei voitu ladata.</div>';
-    }
-  }
+  if(open){ settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); contextMenu.style.display = 'none'; }
 });
 document.getElementById('closeHow').addEventListener('click', (e) => { e.stopPropagation(); howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); });
 
-/* Fullscreen */
+/* Fullscreen toggle */
 async function toggleFullScreen(){ try{ if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); fullBtn.title = "Exit fullscreen"; } else { await document.exitFullscreen(); fullBtn.title = "Enter fullscreen"; } }catch(e){} }
 fullBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFullScreen(); });
 
-/* Settings menu */
-settingsBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const open = settingsMenu.classList.toggle('show');
-  settingsMenu.setAttribute('aria-hidden', !open);
-  profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
-  howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true');
-});
+/* SETTINGS menu (gear) */
+settingsBtn.addEventListener('click', (e) => { e.stopPropagation(); const open = settingsMenu.classList.toggle('show'); settingsMenu.setAttribute('aria-hidden', !open); profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); });
 settingsMenu.addEventListener('click', (e) => e.stopPropagation());
-document.addEventListener('click', () => {
-  if(settingsMenu.classList.contains('show')){ settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); }
-  if(profileCard.classList.contains('show')){ profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); }
-  if(contextMenu.style.display === 'block') contextMenu.style.display = 'none';
-  if(howMenu.classList.contains('show')){ howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
-});
+document.addEventListener('click', () => { if(settingsMenu.classList.contains('show')){ settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); } if(profileCard.classList.contains('show')){ profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } if(contextMenu.style.display === 'block') contextMenu.style.display = 'none'; if(howMenu.classList.contains('show')){ howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); } });
 
-/* Logout & delete */
+/* Logout via settings */
 settingsLogout.addEventListener('click', () => { settingsMenu.classList.remove('show'); localStorage.removeItem('session'); showLogin(); });
+
+/* Delete user via settings */
 settingsDelete.addEventListener('click', async () => {
   settingsMenu.classList.remove('show');
   const session = localStorage.getItem('session');
   if(!session){ alert('No logged-in user'); return; }
   if(session.startsWith('Guest')){ alert('Guest account cannot be deleted.'); return; }
   if(!confirm(`Delete user "${session}" and their stored credentials? This cannot be undone.`)) return;
-  try{
-    users = JSON.parse(localStorage.getItem('users')||'{}');
-    delete users[session];
-    localStorage.setItem('users', JSON.stringify(users));
-    await deleteDoc(doc(db,'users',session)).catch(()=>{});
-  }catch(e){}
-  localStorage.removeItem('session');
-  localStorage.removeItem('nick');
-  showLogin();
+  try{ users = JSON.parse(localStorage.getItem('users')||'{}'); delete users[session]; localStorage.setItem('users', JSON.stringify(users)); await deleteDoc(doc(db,'users',session)).catch(()=>{}); }catch(e){}
+  localStorage.removeItem('session'); localStorage.removeItem('nick'); showLogin();
 });
 
-/* profile card */
-function showProfileCardFor(name, color, anchorEl){
-  profileAvatar.textContent = name?.[0] || '?';
-  profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
-  profileName.textContent = name;
-  profileColor.textContent = color || '';
-  if(anchorEl){
-    const r = anchorEl.getBoundingClientRect();
-    profileCard.style.top = (r.bottom + 8) + 'px';
-    profileCard.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
-  }
-  profileCard.classList.add('show'); profileCard.setAttribute('aria-hidden','false');
-}
+/* profile card show when hovering a name */
+function showProfileCardFor(name, color, joined, anchorEl){ profileAvatar.textContent = name?.[0] || '?'; profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); profileName.textContent = name; profileColor.textContent = color || ''; profileJoined.textContent = joined ? `Joined: ${new Date(joined).toLocaleDateString()}` : ''; if(anchorEl){ const r = anchorEl.getBoundingClientRect(); profileCard.style.top = (r.bottom + 8) + 'px'; profileCard.style.right = Math.max(12, window.innerWidth - r.right) + 'px'; } profileCard.classList.add('show'); profileCard.setAttribute('aria-hidden','false'); }
 
 /* nick color */
 nickColorCircle.addEventListener('click', ()=> { if(nickColorInput.disabled) return; nickColorInput.click(); });
-nickColorInput.addEventListener('input', async ()=>{ 
-  nickColorCircle.style.background = nickColorInput.value;
-  localStorage.setItem('nickColor', nickColorInput.value);
-  const session = localStorage.getItem('session') || '';
-  if(session && !session.startsWith('Guest')){
-    try{ await setDoc(doc(db,'users',session), { color: nickColorInput.value, joined: serverTimestamp() }, { merge: true }); userCache.set(session, { color: nickColorInput.value }); }catch(e){}
-  }
-});
+nickColorInput.addEventListener('input', async ()=>{ nickColorCircle.style.background = nickColorInput.value; localStorage.setItem('nickColor', nickColorInput.value); const session = localStorage.getItem('session') || ''; if(session && !session.startsWith('Guest')){ try{ await setDoc(doc(db,'users',session), { color: nickColorInput.value, joined: serverTimestamp() }, { merge: true }); userCache.set(session, { color: nickColorInput.value }); }catch(e){} } });
 
-/* rooms */
-async function loadRooms(){
-  roomList.innerHTML = '';
-  roomListSidebar.innerHTML = '';
-  roomListMobile.innerHTML = '';
-  try{
-    const s = await getDocs(collection(db,'rooms'));
-    s.forEach(r => renderRoomEntry(r.id));
-  }catch(e){ console.error('loadRooms error', e); }
-}
-function renderRoomEntry(id){
-  const createEl = (container) => {
-    const d = document.createElement('div');
-    d.className = 'room';
-    d.textContent = '# ' + id;
-    d.onclick = ()=> joinRoom(id);
-    container.appendChild(d);
-  };
-  createEl(roomList);
-  createEl(roomListSidebar);
-  createEl(roomListMobile);
-}
-function setupRoomsListener(){
-  if(roomsUnsub) roomsUnsub();
-  try{
-    const roomsCol = collection(db,'rooms');
-    roomsUnsub = onSnapshot(roomsCol, snap => {
-      roomList.innerHTML = '';
-      roomListSidebar.innerHTML = '';
-      roomListMobile.innerHTML = '';
-      snap.forEach(docSnap => { renderRoomEntry(docSnap.id); });
-    }, err => { console.error('rooms listener error', err); loadRooms().catch(()=>{}); });
-  }catch(e){ console.error('setupRoomsListener error', e); loadRooms().catch(()=>{}); }
-}
+/* rooms load/render (desktop-only) */
+async function loadRooms(){ roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; try{ const s = await getDocs(collection(db,'rooms')); s.forEach(r => renderRoomEntry(r.id)); }catch(e){ console.error('loadRooms error', e); } }
+function renderRoomEntry(id){ const createEl = (container) => { const d = document.createElement('div'); d.className = 'room'; d.textContent = '# ' + id; d.onclick = ()=> joinRoom(id); container.appendChild(d); }; createEl(roomList); createEl(roomListSidebar); }
 
-/* create/join */
-createRoomBtn.onclick = async ()=> {
-  const r = prompt('Room name'); if(!r) return;
-  const p = prompt('Password (optional)');
-  const ref = doc(db,'rooms',r);
-  const snap = await getDoc(ref);
-  if(!snap.exists()) await setDoc(ref,{password:p||'',created:serverTimestamp()});
-  joinRoom(r);
-};
+/* realtime rooms listener */
+function setupRoomsListener(){ if(roomsUnsub) roomsUnsub(); try{ const roomsCol = collection(db,'rooms'); roomsUnsub = onSnapshot(roomsCol, snap => { roomList.innerHTML = ''; roomListSidebar.innerHTML = ''; snap.forEach(docSnap => { renderRoomEntry(docSnap.id); }); }, err => { console.error('rooms listener error', err); loadRooms().catch(()=>{}); }); }catch(e){ console.error('setupRoomsListener error', e); loadRooms().catch(()=>{}); } }
 
-/* joinRoom */
-async function joinRoom(r){
-  const ref = doc(db,'rooms',r);
-  const snap = await getDoc(ref);
-  if(!snap.exists()) return alert("Room not found");
-  const pass = prompt('Password');
-  if(pass !== snap.data().password) return alert('Wrong room password');
+/* create/join handlers */
+createRoomBtn.onclick = async ()=> { const r = prompt('Room name'); if(!r) return; const p = prompt('Password (optional)'); const ref = doc(db,'rooms',r); const snap = await getDoc(ref); if(!snap.exists()) await setDoc(ref,{password:p||'',created:serverTimestamp()}); joinRoom(r); };
 
-  nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000));
-  const session = localStorage.getItem('session') || '';
-  if(session.startsWith('Guest')){
-    nickColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
-  } else {
-    nickColor = nickColorInput.value;
-  }
-  localStorage.setItem('nick', nick);
-  localStorage.setItem('nickColor', nickColor);
+/* joinRoom then enterRoom (desktop-focused) */
+async function joinRoom(r){ const ref = doc(db,'rooms',r); const snap = await getDoc(ref); if(!snap.exists()) return alert("Room not found"); const pass = prompt('Password'); if(pass !== snap.data().password) return alert('Wrong room password'); nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000)); const session = localStorage.getItem('session') || ''; if(session.startsWith('Guest')){ nickColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6'; } else { nickColor = nickColorInput.value; } localStorage.setItem('nick', nick); localStorage.setItem('nickColor', nickColor); enterRoom(r); }
 
-  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
-  const drawerOpen = mobileDrawer.classList.contains('show');
-  if(isMobile && drawerOpen){
-    mobileDrawer.classList.remove('show');
-    mobileOverlay.classList.remove('show');
-    setTimeout(()=> {
-      mobileOverlay.style.display = 'none';
-      mobileDrawer.style.display = 'none';
-      enterRoom(r);
-      updateOpenLobbyBtnVisibility();
-    }, durationMs + 20);
-  } else {
-    enterRoom(r);
-  }
-}
+async function enterRoom(r){ showMain(); room = r; roomName.textContent = '# ' + r; if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub(); chat.innerHTML = ''; lastMessageTime = Date.now(); const msgsQuery = query(collection(db,'rooms',room,'messages'), orderBy('time'));
+  messagesUnsub = onSnapshot(msgsQuery, snap => { const shouldScroll = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 160; snap.docChanges().forEach(change => { const d = change.doc; const m = d.data(); if(change.type === 'added'){ renderMessage(d.id, m); const localNick = localStorage.getItem('nick') || nick; if(localNick){ setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localNick), {name: localNick, t: serverTimestamp()}).catch(()=>{}); } } else if(change.type === 'modified'){ updateMessage(d.id, m); } else if(change.type === 'removed'){ removeMessage(d.id); } }); requestAnimationFrame(() => scrollChatToBottom()); });
 
-/* enterRoom */
-async function enterRoom(r){
-  showMain();
-  room = r;
-  roomName.textContent = '# ' + r;
-  if(messagesUnsub) messagesUnsub();
-  if(typingUnsub) typingUnsub();
-  chat.innerHTML = '';
-  lastMessageTime = Date.now();
+  typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap => { const now = Date.now(); const usersTyping = []; snap.forEach(d=> { if(d.id === (localStorage.getItem('nick')||nick)) return; const tField = d.data().t; let tMs = null; if(tField && typeof tField.toMillis === 'function') tMs = tField.toMillis(); else if(typeof tField === 'number') tMs = tField; else if(tField && typeof tField._seconds === 'number') tMs = (tField._seconds*1000) + (tField._nanoseconds ? Math.floor(tField._nanoseconds/1e6) : 0); if(tMs && (now - tMs) < 4000) usersTyping.push(d.id); }); renderTypingIndicator(usersTyping); }); }
 
-  const msgsQuery = query(collection(db,'rooms',room,'messages'), orderBy('time'));
-  messagesUnsub = onSnapshot(msgsQuery, snap => {
-    snap.docChanges().forEach(change => {
-      const d = change.doc; const m = d.data();
-      if(change.type === 'added'){
-        renderMessage(d.id, m);
-        const localNick = localStorage.getItem('nick') || nick;
-        if(localNick){
-          setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localNick), {name: localNick, t: serverTimestamp()}).catch(()=>{});
-        }
-      } else if(change.type === 'modified'){ updateMessage(d.id, m); }
-      else if(change.type === 'removed'){ removeMessage(d.id); }
-    });
-    requestAnimationFrame(() => scrollChatToBottom());
-  });
-
-  typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap => {
-    const now = Date.now(); const usersTyping = [];
-    snap.forEach(d=> {
-      if(d.id === (localStorage.getItem('nick')||nick)) return;
-      const tField = d.data().t; let tMs = null;
-      if(tField && typeof tField.toMillis === 'function') tMs = tField.toMillis();
-      else if(typeof tField === 'number') tMs = tField;
-      else if(tField && typeof tField._seconds === 'number') tMs = (tField._seconds*1000) + (tField._nanoseconds ? Math.floor(tField._nanoseconds/1e6) : 0);
-      if(tMs && (now - tMs) < 4000) usersTyping.push(d.id);
-    });
-    renderTypingIndicator(usersTyping);
-  });
-}
-
-/* typing indicator vars */
+/* typing indicator animation control vars */
 let _lastTypingKey = '';
 let _lastTypingAnimRestart = 0;
 const TYPING_ANIM_MIN_RESTART_INTERVAL = 1200;
+function renderTypingIndicator(usersTyping){ if(!usersTyping || usersTyping.length === 0){ typingIndicator.style.display = 'none'; typingIndicator.innerHTML = ''; _lastTypingKey = ''; return; } const sorted = [...usersTyping].sort(); const key = sorted.join(','); const showAvs = usersTyping.slice(0,4); const avatarsHtml = showAvs.map(n => { const color = (userCache.get(n) && userCache.get(n).color) ? userCache.get(n).color : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); return `<div class="typ-av" style="background:${color}">${escapeHtml((n||'?')[0]||'?')}</div>`; }).join(''); let txt = ''; if(usersTyping.length === 1) txt = `${escapeHtml(usersTyping[0])} kirjoittaa`; else if(usersTyping.length === 2) txt = `${escapeHtml(usersTyping[0])} ja ${escapeHtml(usersTyping[1])} kirjoittavat`; else if(usersTyping.length === 3) txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${escapeHtml(usersTyping[2])} kirjoittavat`; else txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${usersTyping.length-2} muuta kirjoittavat`; typingIndicator.innerHTML = `\n    <div class=\"typing-avatars\">\n      ${avatarsHtml}\n    </div>\n    <div class=\"typing-text\">\n      <div class=\"typing-label\">${txt}</div>\n      <div class=\"typing-dots\" aria-hidden=\"true\"><span></span><span></span><span></span></div>\n    </div>\n  `; typingIndicator.style.display = 'flex'; const now = Date.now(); const needRestart = (key !== _lastTypingKey) || (now - _lastTypingAnimRestart > TYPING_ANIM_MIN_RESTART_INTERVAL); if(needRestart){ const dots = typingIndicator.querySelector('.typing-dots'); if(dots && dots.parentNode){ const clone = dots.cloneNode(true); dots.parentNode.replaceChild(clone, dots); _lastTypingAnimRestart = now; } } _lastTypingKey = key; }
 
-function renderTypingIndicator(usersTyping){
-  if(!usersTyping || usersTyping.length === 0){
-    typingIndicator.style.display = 'none'; typingIndicator.innerHTML = ''; _lastTypingKey = ''; return;
-  }
-  const sorted = [...usersTyping].sort(); const key = sorted.join(',');
-  const showAvs = usersTyping.slice(0,4);
-  const avatarsHtml = showAvs.map(n => {
-    const color = (userCache.get(n) && userCache.get(n).color) ? userCache.get(n).color : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
-    return `<div class="typ-av" style="background:${color}">${escapeHtml((n||'?')[0]||'?')}</div>`;
-  }).join('');
-  let txt = '';
-  if(usersTyping.length === 1) txt = `${escapeHtml(usersTyping[0])} kirjoittaa`;
-  else if(usersTyping.length === 2) txt = `${escapeHtml(usersTyping[0])} ja ${escapeHtml(usersTyping[1])} kirjoittavat`;
-  else if(usersTyping.length === 3) txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${escapeHtml(usersTyping[2])} kirjoittavat`;
-  else txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${usersTyping.length-2} muuta kirjoittavat`;
-  typingIndicator.innerHTML = `<div class="typing-avatars">${avatarsHtml}</div><div class="typing-text"><div class="typing-label">${txt}</div><div class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></div></div>`;
-  typingIndicator.style.display = 'flex';
-  const now = Date.now();
-  const needRestart = (key !== _lastTypingKey) || (now - _lastTypingAnimRestart > TYPING_ANIM_MIN_RESTART_INTERVAL);
-  if(needRestart){
-    const dots = typingIndicator.querySelector('.typing-dots');
-    if(dots && dots.parentNode){ const clone = dots.cloneNode(true); dots.parentNode.replaceChild(clone, dots); _lastTypingAnimRestart = now; }
-  }
-  _lastTypingKey = key;
-}
+/* DOM helpers for incremental updates */
+function makeMessageElement(id, m){ const el = document.createElement('div'); el.className = 'message'; el.dataset.msgid = id; el.dataset.owner = m.name; const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:''; const safeTextHtml = linkify(escapeHtml(m.text || '')); const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : ''; let msgInner = `\n    <div class="avatar" style="background:${m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>\n    <div class="msg">\n      ${replyHtml}\n      <b class="msg-sender" style="color:${m.color || '#999'};cursor:pointer">${escapeHtml(m.name)}</b>\n      <span class="time">${m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>\n      <div class="msg-text">${safeTextHtml}${editedNoteHtml}</div>\n    </div>\n  `; el.innerHTML = msgInner; if(!isMobile){ const replyBtn = document.createElement('div'); replyBtn.className = 'reply-btn'; replyBtn.setAttribute('data-name', escapeAttr(m.name)); replyBtn.setAttribute('data-text', escapeAttr(m.text)); replyBtn.textContent = 'reply'; el.querySelector('.msg').appendChild(replyBtn); } const localNick = localStorage.getItem('nick') || nick; if(m.name === localNick && !isMobile){ const msgInnerEl = el.querySelector('.msg'); const moreBtn = document.createElement('div'); moreBtn.className = 'more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯'; moreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); const rect = moreBtn.getBoundingClientRect(); showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text); }); msgInnerEl.appendChild(moreBtn); }
 
-/* message helpers */
-function makeMessageElement(id, m){
-  const el = document.createElement('div'); el.className='message'; el.dataset.msgid=id; el.dataset.owner = m.name;
-  const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
-  const safeTextHtml = linkify(escapeHtml(m.text || ''));
-  const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : '';
-  const avatarHtml = `<div class="avatar" style="background:${m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>`;
-  el.innerHTML = `${avatarHtml}<div class="msg">${replyHtml}<b class="msg-sender" style="color:${m.color || '#999'};cursor:pointer">${escapeHtml(m.name)}</b><span class="time">${m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span><div class="msg-text">${safeTextHtml}${editedNoteHtml}</div></div>`;
-  if(!isMobile){
-    const replyBtn = document.createElement('div'); replyBtn.className='reply-btn'; replyBtn.setAttribute('data-name', escapeAttr(m.name)); replyBtn.setAttribute('data-text', escapeAttr(m.text)); replyBtn.textContent='reply';
-    el.querySelector('.msg').appendChild(replyBtn);
-  }
-  const localNick = localStorage.getItem('nick') || nick;
-  if(m.name === localNick && !isMobile){
-    const msgInnerEl = el.querySelector('.msg');
-    const moreBtn = document.createElement('div'); moreBtn.className='more-btn'; moreBtn.title='More'; moreBtn.textContent='⋯';
-    moreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); const rect = moreBtn.getBoundingClientRect(); showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text); });
-    msgInnerEl.appendChild(moreBtn);
-  }
   const senderEl = el.querySelector('.msg-sender');
   if(senderEl){
-    if(!isMobile){
-      senderEl.addEventListener('mouseenter', async (ev)=>{ ev.stopPropagation(); let color=m.color; try{ const cached=userCache.get(m.name); if(cached && cached.color) color=cached.color; else { const us=await getDoc(doc(db,'users',m.name)); if(us.exists()){ const ud=us.data(); color=ud.color||color; userCache.set(m.name, { color }); } } }catch(e){} showProfileCardFor(m.name, color, senderEl); });
-      senderEl.addEventListener('mouseleave', ()=>{ setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120); });
-    } else {
-      senderEl.addEventListener('click', async (ev)=>{ ev.stopPropagation(); let color=m.color; try{ const cached=userCache.get(m.name); if(cached && cached.color) color=cached.color; else { const us=await getDoc(doc(db,'users',m.name)); if(us.exists()){ const ud=us.data(); color=ud.color||color; userCache.set(m.name, { color }); } } }catch(e){} showProfileCardFor(m.name, color, senderEl); });
-    }
+    senderEl.addEventListener('mouseenter', async (ev)=>{
+      ev.stopPropagation();
+      let joined = null; let color = m.color;
+      try{ const cached = userCache.get(m.name); if(cached && cached.color) color = cached.color; else { const us = await getDoc(doc(db,'users',m.name)); if(us.exists()){ const ud = us.data(); joined = ud.joined?.toMillis ? new Date(ud.joined.toMillis()) : ud.joined; color = ud.color || color; userCache.set(m.name, { color }); } } }catch(e){}
+      showProfileCardFor(m.name, color, joined, senderEl);
+    });
+    senderEl.addEventListener('mouseleave', ()=>{ setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120); });
   }
 
-  el.addEventListener('mouseenter', async (ev)=>{ if(m.name === (localStorage.getItem('nick')||nick)) return; const rect = el.getBoundingClientRect(); tooltip.style.left = (rect.right + 8) + 'px'; tooltip.style.top = (rect.top) + 'px'; tooltip.textContent = 'Loading...'; tooltip.style.display = 'block'; tooltip.setAttribute('aria-hidden','false'); try{ const seenDocs = await getDocs(collection(db, 'rooms', room, 'messages', id, 'seen')); const names = []; seenDocs.forEach(sd=> names.push(sd.data().name)); tooltip.textContent = names.length ? ('Seen by: ' + names.join(', ')) : 'No one has seen this yet'; }catch(e){ tooltip.textContent = '—'; } });
+  el.addEventListener('mouseenter', async (ev)=>{
+    if(m.name === (localStorage.getItem('nick')||nick)) return;
+    const rect = el.getBoundingClientRect();
+    tooltip.style.left = (rect.right + 8) + 'px';
+    tooltip.style.top = (rect.top) + 'px';
+    tooltip.textContent = 'Loading...';
+    tooltip.style.display = 'block';
+    tooltip.setAttribute('aria-hidden','false');
+    try{ const seenDocs = await getDocs(collection(db, 'rooms', room, 'messages', id, 'seen')); const names = []; seenDocs.forEach(sd=> names.push(sd.data().name)); tooltip.textContent = names.length ? ('Seen by: ' + names.join(', ')) : 'No one has seen this yet'; }catch(e){ tooltip.textContent = '—'; }
+  });
   el.addEventListener('mouseleave', ()=>{ tooltip.style.display = 'none'; tooltip.setAttribute('aria-hidden','true'); });
 
+  // mobile/touch interactions removed — keep a noop for compatibility
   attachMobileInteractions(el, id, m);
 
   el.querySelectorAll('.reply-btn').forEach(b => b.addEventListener('click', (e)=>{ replyTo = { name: b.dataset.name, text: b.dataset.text }; replyBox.style.display = 'block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; }));
 
-  return el;
-}
-function renderMessage(id,m){ if(chat.querySelector(`[data-msgid="${id}"]`)) return; const el=makeMessageElement(id,m); chat.appendChild(el); }
-function updateMessage(id,m){ const el=chat.querySelector(`[data-msgid="${id}"]`); if(!el){ renderMessage(id,m); return; } const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:''; const safeTextHtml = linkify(escapeHtml(m.text || '')); const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : ''; const avatar = el.querySelector('.avatar'); const sender = el.querySelector('.msg-sender'); const time = el.querySelector('.time'); const msgText = el.querySelector('.msg-text'); if(avatar) avatar.style.background = m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; } if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''; if(msgText) msgText.innerHTML = safeTextHtml + editedNoteHtml; const replyPrev = el.querySelector('.reply-preview'); if(replyPrev && !m.reply) replyPrev.remove(); else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', replyHtml); const localNick = localStorage.getItem('nick') || nick; const hasMore = !!el.querySelector('.more-btn'); if(m.name === localNick && !isMobile && !hasMore){ const msgInner = el.querySelector('.msg'); const moreBtn = document.createElement('div'); moreBtn.className = 'more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯'; moreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); const rect = moreBtn.getBoundingClientRect(); showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text); }); msgInner.appendChild(moreBtn); } else if((m.name !== localNick || isMobile) && hasMore){ const mb = el.querySelector('.more-btn'); if(mb) mb.remove(); } }
+  return el; }
+
+function renderMessage(id, m){ if(chat.querySelector(`[data-msgid="${id}"]`)) return; const el = makeMessageElement(id, m); chat.appendChild(el); }
+function updateMessage(id, m){ const el = chat.querySelector(`[data-msgid="${id}"]`); if(!el) { renderMessage(id, m); return; } const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:''; const safeTextHtml = linkify(escapeHtml(m.text || '')); const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : ''; const avatar = el.querySelector('.avatar'); const sender = el.querySelector('.msg-sender'); const time = el.querySelector('.time'); const msgText = el.querySelector('.msg-text'); if(avatar) avatar.style.background = m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; } if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''; if(msgText) msgText.innerHTML = safeTextHtml + editedNoteHtml; const replyPrev = el.querySelector('.reply-preview'); if(replyPrev && !m.reply) replyPrev.remove(); else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', replyHtml); const localNick = localStorage.getItem('nick') || nick; const hasMore = !!el.querySelector('.more-btn'); if(m.name === localNick && !isMobile && !hasMore){ const msgInner = el.querySelector('.msg'); const moreBtn = document.createElement('div'); moreBtn.className = 'more-btn'; moreBtn.title = 'More'; moreBtn.textContent = '⋯'; moreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); const rect = moreBtn.getBoundingClientRect(); showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text); }); msgInner.appendChild(moreBtn); } else if((m.name !== localNick || isMobile) && hasMore){ const mb = el.querySelector('.more-btn'); if(mb) mb.remove(); } }
+
 function removeMessage(id){ const el = chat.querySelector(`[data-msgid="${id}"]`); if(el) el.remove(); }
 
-/* context menu */
-function showEditDeleteMenu(x,y,msgId, currentText){
-  contextMenu.innerHTML = '';
-  const editBtn = document.createElement('button');
-  editBtn.textContent = 'Edit';
-  editBtn.onclick = async (ev)=>{
-    ev.stopPropagation();
-    const newText = prompt('Edit message', currentText);
-    if(newText == null) { hideContextMenu(); return; }
-    try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText, editedNote: 'Edited' }).catch(console.error); }catch(e){}
-    hideContextMenu();
-  };
-  contextMenu.appendChild(editBtn);
-  const delBtn = document.createElement('button'); delBtn.textContent = 'Delete';
-  delBtn.onclick = async (ev)=>{ ev.stopPropagation(); if(confirm('Delete this message?')){ try{ await deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error); }catch(e){} } hideContextMenu(); };
-  contextMenu.appendChild(delBtn);
-  const pad = 6; const menuWidth = 180; const menuHeight = 80;
-  let left = x; let top = y;
-  if(left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - pad;
-  if(top + menuHeight > window.innerHeight) top = window.innerHeight - menuHeight - pad;
-  contextMenu.style.left = left + 'px'; contextMenu.style.top = top + 'px'; contextMenu.style.display = 'block'; contextMenu.setAttribute('aria-hidden','false');
-}
+function showEditDeleteMenu(x,y,msgId, currentText){ contextMenu.innerHTML = ''; const editBtn = document.createElement('button'); editBtn.textContent = 'Edit'; editBtn.onclick = async (ev)=>{ ev.stopPropagation(); const newText = prompt('Edit message', currentText); if(newText == null) { hideContextMenu(); return; } try{ await updateDoc(doc(db,'rooms',room,'messages',msgId), { text: newText, editedNote: 'Edited' }).catch(console.error); }catch(e){} hideContextMenu(); }; contextMenu.appendChild(editBtn); const delBtn = document.createElement('button'); delBtn.textContent = 'Delete'; delBtn.onclick = async (ev)=>{ ev.stopPropagation(); if(confirm('Delete this message?')){ try{ await deleteDoc(doc(db,'rooms',room,'messages',msgId)).catch(console.error); }catch(e){} } hideContextMenu(); }; contextMenu.appendChild(delBtn); const pad = 6; const menuWidth = 180; const menuHeight = 80; let left = x; let top = y; if(left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - pad; if(top + menuHeight > window.innerHeight) top = window.innerHeight - menuHeight - pad; contextMenu.style.left = left + 'px'; contextMenu.style.top = top + 'px'; contextMenu.style.display = 'block'; contextMenu.setAttribute('aria-hidden','false'); }
 function hideContextMenu(){ contextMenu.style.display = 'none'; contextMenu.setAttribute('aria-hidden','true'); }
 
-/* mobile interactions (swipe-to-reply & long-press) */
-function attachMobileInteractions(el, msgId, messageData){
-  let longPressTimer = null; let touchStartX = 0; let touchStartY = 0; let draggingLocal = false; let replyPreviewShownFor = false;
-  el.addEventListener('touchstart', (e)=>{ const t = e.touches[0]; touchStartX = t.clientX; touchStartY = t.clientY; draggingLocal = false; replyPreviewShownFor = false;
-    if(messageData.name === (localStorage.getItem('nick')||nick)){ longPressTimer = setTimeout(()=> { showEditDeleteMenu(Math.round(touchStartX - 80), Math.round(touchStartY + 6), msgId, messageData.text); }, 650); }
-    el.style.transition = 'none';
-  }, {passive:true});
-  el.addEventListener('touchmove', (e)=>{ const t = e.touches[0]; const dx = t.clientX - touchStartX; const dy = t.clientY - touchStartY;
-    if(Math.abs(dy) > Math.abs(dx)){ if(longPressTimer) clearTimeout(longPressTimer); return; }
-    if(!draggingLocal && Math.abs(dx) > 10){ draggingLocal = true; if(longPressTimer) clearTimeout(longPressTimer); }
-    if(draggingLocal){ e.preventDefault(); const capped = Math.min(Math.max(dx, 0), 160); el.style.transform = `translateX(${capped}px)`; el.style.willChange = 'transform';
-      if(capped > 36 && !replyPreviewShownFor){ replyPreviewShownFor = true; replyTo = { name: messageData.name, text: messageData.text }; replyBox.style.display = 'block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; }
-      else if(capped <= 36 && replyPreviewShownFor){ replyPreviewShownFor = false; replyTo = null; replyBox.style.display = 'none'; }
-    }
-  }, {passive:false});
-  el.addEventListener('touchend', ()=>{ if(longPressTimer) clearTimeout(longPressTimer);
-    let px = 0; const tr = el.style.transform; if(tr){ const m = tr.match(/translateX\((-?\\d+(\\.\\d+)?)px\\)/); px = m ? parseInt(m[1],10) : 0; }
-    el.style.transition = 'transform 180ms ease'; el.style.transform = ''; setTimeout(()=>{ el.style.transition = ''; el.style.willChange = ''; }, 200);
-    if(px > 60){ replyTo = replyTo || { name: messageData.name, text: messageData.text }; replyBox.style.display = 'block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply; }
-    else { replyTo = null; replyBox.style.display = 'none'; replyPreviewShownFor = false; }
-  });
-}
+/* touch/mobile interactions removed — provide noop to maintain calls */
+function attachMobileInteractions(){ /* noop — desktop-only build */ }
 
-/* typing management */
-msg.addEventListener('input', ()=> {
-  if(!room || !nick) return;
-  if(msg.value.trim()===''){ deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); return; }
-  setDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick),{t:serverTimestamp()});
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=> { deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); }, 1500);
-});
+/* typing indicator management */
+msg.addEventListener('input', ()=> { if(!room || !nick) return; if(msg.value.trim()===''){ deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); return; } setDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick),{t:serverTimestamp()}); clearTimeout(typingTimeout); typingTimeout = setTimeout(()=> { deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); }, 1500); });
 msg.addEventListener('blur', ()=> { if(room && (localStorage.getItem('nick')||nick)) deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{}); });
 
 /* reply UI */
 chat.addEventListener('click', (e)=>{ const b = e.target.closest('.reply-btn'); if(!b) return; replyTo = { name: b.dataset.name, text: b.dataset.text }; replyBox.style.display = 'block'; replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`; document.getElementById('cancelReply').onclick = cancelReply; });
 function cancelReply(){ replyTo = null; replyBox.style.display = 'none'; }
 
-/* send */
+/* send messages */
 msg.addEventListener('keydown', async (e)=>{ if(e.key !== 'Enter') return; const textRaw = msg.value.trim(); msg.value = ''; if(!textRaw) return; if(!room){ alert('You are not in a room'); return; } deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{});
   if(textRaw.startsWith('/')){ await handleCommand(textRaw); return; }
   const colorToSend = (localStorage.getItem('session') && !localStorage.getItem('session').startsWith('Guest')) ? (localStorage.getItem('nickColor') || '#58a6ff') : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
   await addDoc(collection(db,'rooms',room,'messages'), { name: localStorage.getItem('nick') || nick, text: textRaw, reply: replyTo, color: colorToSend, time: serverTimestamp() }).catch(console.error);
-  replyTo = null; replyBox.style.display = 'none';
-});
+  replyTo = null; replyBox.style.display = 'none'; });
 
-/* autoscroll */
-function scrollChatToBottom(force = false){ if(force){ chat.scrollTop = chat.scrollHeight; return; } const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 160; if(nearBottom) chat.scrollTop = chat.scrollHeight; }
+/* Helper: robust autoscroll */
+function scrollChatToBottom(force = false){ if(force){ chat.scrollTop = chat.scrollHeight; return; } const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 160; if(nearBottom){ chat.scrollTop = chat.scrollHeight; } }
 
-/* batch delete helper */
+/* Helper: chunked batch deletes */
 async function deleteDocsInBatches(refs){ const CHUNK = 400; let i = 0; while(i < refs.length){ const b = writeBatch(db); const end = Math.min(i + CHUNK, refs.length); for(let j=i;j<end;j++) b.delete(refs[j]); await b.commit(); i = end; } }
 
-/* commands (trimmed to essential) */
-async function handleCommand(cmdText){ const parts = cmdText.split(/\s+/); const c = parts[0].toLowerCase();
-  if(c === '/help'){ alert(["Commands:","/help — Show this list.","/roll [n] — Roll 1–10 dice.","/coin — Flip a coin.","/tableflip — Table flip effect.","/shrug — ¯\\\\_(ツ)_/¯","/clear — Delete all messages in the room (confirmation required)."].join("\n\n")); return; }
-  if(c === '/roll'){ let n=1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1)); const rolls=[]; for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1); const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()}); return; }
+/* command processor */
+async function handleCommand(cmdText){ const parts = cmdText.split(/\s+/); const c = parts[0].toLowerCase(); if(c === '/help'){ const helpText = ["Commands:", "/help — Show this list (only visible to you).", "/roll [n] — Roll 1–10 dice (default 1).", "/coin — Flip a coin.", "/tableflip — Table flip effect.", "/shrug — ¯\\_(ツ)_/¯", "/clear — Delete all messages in the room (confirmation required).", "/delete (or /delet) — Delete the room and all messages (confirmation required)."].join("\n\n"); alert(helpText); return; }
+  if(c === '/roll'){ let n = 1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1)); const rolls = []; for(let i=0;i<n;i++) rolls.push(Math.floor(Math.random()*6)+1); const txt = `${localStorage.getItem('nick')||nick} rolled 🎲 ${rolls.map(r=>`🎲 ${r}`).join(n>1?' + ':'')}${n>1?` = ${rolls.reduce((a,b)=>a+b,0)}`:''}`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()}); return; }
   if(c === '/coin'){ const r = Math.random() < 0.5 ? 'Heads' : 'Tails'; const txt = `${localStorage.getItem('nick')||nick} flipped a coin → ${r}`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()}); return; }
+  if(c === '/tableflip'){ const txt = `${localStorage.getItem('nick')||nick} (╯°□°）╯︵ ┻━┻`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()}); return; }
+  if(c === '/shrug'){ const txt = `${localStorage.getItem('nick')||nick} ¯\\_(ツ)_/¯`; await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()}); return; }
   if(c === '/clear'){ if(!confirm('Delete all messages in this room?')) return; try{ const msgs = await getDocs(collection(db,'rooms',room,'messages')); const refsToDelete = []; for(const d of msgs.docs){ const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen')); for(const sd of seenSnap.docs) refsToDelete.push(sd.ref); refsToDelete.push(d.ref); } if(refsToDelete.length) await deleteDocsInBatches(refsToDelete); }catch(e){ console.error('/clear error', e); } return; }
-}
+  if(c === '/delete' || c === '/delet'){ if(!confirm('Delete the room and all messages?')) return; try{ const typingDocs = await getDocs(collection(db,'rooms',room,'typing')); const refsToDelete = []; typingDocs.forEach(t => refsToDelete.push(t.ref)); const msgs = await getDocs(collection(db,'rooms',room,'messages')); for(const d of msgs.docs){ const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen')); for(const sd of seenSnap.docs) refsToDelete.push(sd.ref); refsToDelete.push(d.ref); } if(refsToDelete.length) await deleteDocsInBatches(refsToDelete); try{ await deleteDoc(doc(db,'rooms',room)); }catch(e){} if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub(); room = ''; showHome(); chat.innerHTML = ''; }catch(e){ console.error('/delete error', e); } return; }
+  await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()}); }
 
-/* Mobile drawer open/close */
-function openMobileDrawer(){
-  mobileOverlay.classList.add('show');
-  mobileDrawer.classList.add('show');
-  mobileOverlay.style.display = 'block';
-  mobileDrawer.style.display = 'block';
-  mobileOverlay.setAttribute('aria-hidden','false'); mobileDrawer.setAttribute('aria-hidden','false');
-  updateOpenLobbyBtnVisibility();
-}
-function closeMobileDrawer(){
-  mobileDrawer.classList.remove('show');
-  mobileOverlay.classList.remove('show');
-  const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
-  setTimeout(()=>{
-    if(!mobileDrawer.classList.contains('show')){
-      mobileOverlay.style.display = 'none';
-      mobileDrawer.style.display = 'none';
-      mobileOverlay.setAttribute('aria-hidden','true'); mobileDrawer.setAttribute('aria-hidden','true');
-      updateOpenLobbyBtnVisibility();
-    }
-  }, durationMs + 20);
-}
+/* helper utils */
+function escapeHtml(s){ if(!s && s !== 0) return ''; return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;', '"':'&quot;',"'":'&#39;'}[m]); }); }
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function linkify(text){ const urlRe = /((https?:\/\/|www\.)[\w\-@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([\w\-@:%_\+.~#?&//=]*))/gi; return text.replace(urlRe, function(match){ let url = match; if(!/^https?:\/\//i.test(url)) url = 'https://' + url; return `<a href="${url}" target="_blank" rel="noopener">${match}</a>`; }); }
 
-/* Drawer visibility logic for blue button */
-function updateOpenLobbyBtnVisibility(){
-  const drawerOpen = mobileDrawer.classList.contains('show') || mobileOverlay.classList.contains('show');
-  if(!isMobile){ openLobbyBtn.style.display = 'none'; return; }
-  const isHomeVisible = home.style.display !== 'none';
-  if(isHomeVisible && !drawerOpen) openLobbyBtn.style.display = 'block';
-  else openLobbyBtn.style.display = 'none';
-}
-const origShowHome = showHome; showHome = function(){ origShowHome(); updateOpenLobbyBtnVisibility(); };
-const origShowMain = showMain; showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
-const origShowLogin = showLogin; showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
-
-/* Drawer interaction fixes */
-// Prevent clicks inside drawer from bubbling up to document (so it doesn't close immediately)
-mobileDrawer.addEventListener('click', (e) => { e.stopPropagation(); });
-// Close drawer when overlay is clicked
-mobileOverlay.addEventListener('click', closeMobileDrawer);
-// Open/close buttons
-openLobbyBtn.addEventListener('click', openMobileDrawer);
-closeDrawer.addEventListener('click', closeMobileDrawer);
-
-// Touch drag handling for drawer (basic)
-let dragging = false, startX = 0, lastX = 0, lastT = 0, vx = 0, drawerWidth = 0;
-function beginDrag(x){ dragging = true; startX = x; lastX = x; lastT = performance.now(); drawerWidth = mobileDrawer.getBoundingClientRect().width || (window.innerWidth * 0.8); mobileDrawer.style.transition = 'none'; mobileOverlay.style.transition = 'none'; if(!mobileOverlay.classList.contains('show')) mobileOverlay.style.display = 'block'; if(!mobileDrawer.classList.contains('show')) mobileDrawer.style.display = 'block'; mobileDrawer.classList.remove('show'); }
-function dragMove(x){ if(!dragging) return; const dx = x - startX; const wasOpen = mobileDrawer.classList.contains('show'); let translate; if(wasOpen) translate = Math.min(0, dx); else translate = Math.max(-drawerWidth, -drawerWidth + dx); if(translate > 0) translate = 0; if(translate < -drawerWidth) translate = -drawerWidth; mobileDrawer.style.transform = `translateX(${translate}px)`; const openness = 1 - (Math.abs(translate) / drawerWidth); mobileOverlay.style.background = `rgba(0,0,0,${0.45 * openness})`; mobileOverlay.style.display = 'block'; const now = performance.now(); const dt = now - lastT || 16; vx = (x - lastX) / dt; lastX = x; lastT = now; }
-function endDrag(){ if(!dragging) return; dragging = false; const style = window.getComputedStyle(mobileDrawer); let translateX = 0; const tr = mobileDrawer.style.transform; if(tr){ const m = tr.match(/translateX\((-?\d+(\.\d+)?)px\)/); translateX = m ? parseFloat(m[1]) : 0; } const wasOpen = mobileDrawer.classList.contains('show'); const openDecision = (() => { const VELOCITY_THRESHOLD = 0.35; const SHORT_THRESHOLD = 30; if(Math.abs(vx) > VELOCITY_THRESHOLD) return vx > 0; if(wasOpen) return !(Math.abs(translateX) > SHORT_THRESHOLD); else return (Math.abs(translateX) < (drawerWidth - SHORT_THRESHOLD)); })(); mobileDrawer.style.transition = ''; mobileOverlay.style.transition = ''; if(openDecision){ mobileDrawer.style.transform = ''; mobileDrawer.classList.add('show'); mobileOverlay.classList.add('show'); updateOpenLobbyBtnVisibility(); } else { mobileDrawer.style.transform = `translateX(-${drawerWidth}px)`; mobileDrawer.classList.remove('show'); mobileOverlay.classList.remove('show'); setTimeout(()=>{ if(!mobileDrawer.classList.contains('show')){ mobileOverlay.style.display = 'none'; mobileDrawer.style.display = 'none'; updateOpenLobbyBtnVisibility(); } }, 220); } vx = 0; mobileDrawer.style.willChange = ''; }
-
-/* drawer touch events */
-mobileDrawer.addEventListener('touchstart', (e)=>{ if(e.touches && e.touches[0]) beginDrag(e.touches[0].clientX); }, { passive:true });
-mobileDrawer.addEventListener('touchmove', (e)=>{ if(e.touches && e.touches[0] && dragging) { dragMove(e.touches[0].clientX); e.preventDefault(); } }, { passive:false });
-mobileDrawer.addEventListener('touchend', endDrag);
-
-/* Utility helpers */
-function escapeHtml(s){ if(!s && s !== 0) return ''; return String(s).replace(/[&<>\"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[m]); }); }
-function escapeAttr(s){ return (s||'').replace(/\"/g,'&quot;'); }
-function linkify(text){ const urlRe = /((https?:\\/\\/|www\\.)[\\w\\-@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([\\w\\-@:%_\\+.~#?&//=]*))/gi; return text.replace(urlRe, function(match){ let url = match; if(!/^https?:\\/\\//i.test(url)) url = 'https://' + url; return `<a href=\"${url}\" target=\"_blank\" rel=\"noopener\">${match}</a>`; }); }
+/* helper to get user color */
 function getUserColor(name){ const cached = userCache.get(name); if(cached && cached.color) return cached.color; return getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim(); }
 
-/* Login code (SHA-256 + Firestore) */
-async function sha256(text) { const data = new TextEncoder().encode(text); const hash = await crypto.subtle.digest('SHA-256', data); return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join(''); }
-loginBtn.addEventListener('click', async (e) => {
-  e.preventDefault();
-  const username = (loginUser.value || '').trim();
-  const password = loginPass.value || '';
-  if(!username || !password){ loginMsg.textContent = 'Täytä käyttäjänimi ja salasana.'; return; }
-  loginMsg.textContent = 'Tarkistetaan...';
-  try {
-    const userRef = doc(db, 'users', username);
-    const snap = await getDoc(userRef);
-    const passHash = await sha256(password);
-    if(!snap.exists()){
-      await setDoc(userRef, { passwordHash: passHash, created: serverTimestamp(), color: '#58a6ff' });
-      localStorage.setItem('session', username);
-      localStorage.setItem('nick', username);
-      localStorage.setItem('nickColor', '#58a6ff');
-      loginMsg.textContent = 'Rekisteröity ja kirjautunut 👍';
-      nickInput.value = username; nickColorInput.value = '#58a6ff'; nickColorCircle.style.background = '#58a6ff'; showHome(); return;
-    }
-    const data = snap.data();
-    if(data.passwordHash === passHash){
-      localStorage.setItem('session', username);
-      localStorage.setItem('nick', username);
-      if (data.color) localStorage.setItem('nickColor', data.color);
-      loginMsg.textContent = 'Kirjautuminen onnistui ✅';
-      nickInput.value = username; nickColorInput.value = localStorage.getItem('nickColor') || '#58a6ff'; nickColorCircle.style.background = localStorage.getItem('nickColor') || '#58a6ff'; showHome();
-    } else { loginMsg.textContent = 'Väärä salasana ❌'; }
-  } catch (err) { console.error(err); loginMsg.textContent = 'Virhe: ' + (err.message || String(err)); }
-});
-loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
-
-demoBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  const g = 'Guest' + Math.floor(Math.random()*9000 + 1000);
-  localStorage.setItem('session', g);
-  localStorage.setItem('nick', g);
-  const guestColor = getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim() || '#9aa0a6';
-  localStorage.setItem('nickColor', guestColor);
-  nickInput.value = g; nickColorInput.value = guestColor; nickColorCircle.style.background = guestColor; showHome();
-});
-
-/* Start rooms listener */
+/* Real-time setup */
 setupRoomsListener();
+
+/* Emoji picker builder (kept) */
+function buildEmojiPicker(){ emojiPicker.innerHTML = ''; const grid = document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px'; emojiPicker.appendChild(grid); const emojiList = ['😊','😂','👍','❤️','🔥','🎉','🙌','😅','🤔','👏','🙈','🤷']; emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); }); }
+buildEmojiPicker();
+emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
+
+/* back button */
+back.onclick = ()=>{ if(messagesUnsub) messagesUnsub(); if(typingUnsub) typingUnsub(); showHome(); room = ''; chat.innerHTML = ''; typingIndicator.textContent = ''; };
+
 </script>
 </body>
 </html>
