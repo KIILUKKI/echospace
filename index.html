@@ -14,7 +14,7 @@
     --accent:#58a6ff;
     --card:#21262d;
     --text:#e6edf3;
-    --lobby-width:260px;
+    --lobby-width:260px; /* fixed lobby width */
     --drawer-duration: 200ms; /* smooth, brisk but not too fast */
     --drawer-ease: cubic-bezier(.16,.84,.24,1);
     --guest-gray: #9aa0a6;
@@ -22,6 +22,22 @@
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
   #app{width:100%;height:100%;position:relative;overflow:hidden}
+
+/* fixed logo: always same position regardless of screen size */
+#logo{
+  position:fixed;
+  left:18px;
+  top:18px;
+  width:56px;
+  height:56px;
+  background-image:url('images/echo_space.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+  z-index:140;
+  pointer-events:none;
+  border-radius:6px;
+}
 
 /* TOP-RIGHT CONTROLS: container to avoid overlapping */
 #topRightControls{
@@ -36,7 +52,6 @@
 }
 
 /* FULL / SETTINGS (buttons inside container) */
-/* Note: How To button removed per request */
 #fullBtn, #settingsBtn{
   background:transparent;
   border:0;
@@ -92,20 +107,14 @@
 #lobbyTitle{flex:1;font-weight:700}
 .room{padding:10px 12px;border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .room:hover{background:var(--accent);color:#000}
-width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);position:relative;}
-#homeLeft.collapsed{width:40px;padding:8px}
-#lobbyHeader{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-#lobbyTitle{flex:1;font-weight:700}
-.room{padding:10px 12px;border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.room:hover{background:var(--accent);color:#000}
 
-/* lobby controls */
+/* lobby controls (size button removed from DOM) */
 #lobbyControls{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .iconbtn{background:transparent;border:0;color:var(--text);padding:6px;border-radius:8px;cursor:pointer}
 .iconbtn:active{transform:scale(0.98)}
-#lobbySizeBtn{font-weight:700;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03)}
 
 /* ================== Home Center ================== */
+/* background-image removed from center — logo is now fixed #logo element above */
 #homeCenter {
   flex: 1;
   display: flex;
@@ -114,14 +123,9 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
   align-items: center;
   position: relative;
   padding: 18px;
-  background-image: url('images/echo_space.png');
-  background-size: 80%;           /* Kuvaa hieman pienennetty */
-  background-repeat: no-repeat;
-  background-position: 40% -250%; /* Vaakasuunnassa keskellä, pystysuunnassa 10% ylhäältä */
 }
 
-
-
+/* nick & create */
 #nickRow {
   display: flex;
   gap: 12px;
@@ -168,8 +172,6 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
   cursor: pointer;
 }
 
-
-
 /* MAIN chat */
 #main{display:flex;flex-direction:column}
 #header{height:56px;background:var(--panel);display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #0d1117}
@@ -193,7 +195,7 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
 /* edited note */
 .edited-note{font-size:12px;color:var(--muted);margin-left:8px;display:inline-block}
 
-/* typing indicator: new stylish component */
+/* typing indicator component */
 #typingIndicator{
   display:none;
   position:relative;
@@ -236,13 +238,6 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
   40% { transform: translateY(-6px); opacity:1; }
   80% { transform: translateY(0); opacity:0.45; }
   100% { transform: translateY(0); opacity:0.45; }
-}
-
-/* smaller on tiny screens */
-@media (max-width:480px){
-  .typing-avatars .typ-av{ width:24px;height:24px;font-size:11px }
-  #typingIndicator{ margin:0 10px 8px 10px; padding:8px; border-radius:10px }
-  #replyBox { bottom:72px; width:calc(100% - 24px) }
 }
 
 /* reply box: fixed so it never becomes part of message flow */
@@ -325,9 +320,11 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
 <body>
 <div id="app">
 
+  <!-- FIXED LOGO (position stable regardless of viewport) -->
+  <div id="logo" aria-hidden="true"></div>
+
   <!-- TOP-RIGHT CONTROLS CONTAINER -->
   <div id="topRightControls" aria-hidden="false">
-    <!-- HOW TO button removed -->
     <!-- FULLSCREEN button -->
     <button id="fullBtn" title="Toggle fullscreen" aria-label="Fullscreen">⤢</button>
     <!-- SETTINGS GEAR -->
@@ -338,8 +335,6 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
     <button id="settingsLogout">Logout</button>
     <button id="settingsDelete">Delete user</button>
   </div>
-
-  <!-- HOW TO PANEL removed per request -->
 
   <!-- PROFILE CARD (also used when hovering/clicking a user) -->
   <div id="profileCard" class="profile-card" aria-hidden="true">
@@ -370,7 +365,7 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
         <div id="lobbyTitle">Rooms</div>
         <div id="lobbyControls">
           <button id="lobbyToggle" class="iconbtn" title="Collapse/Expand lobby">◀</button>
-          <button id="lobbySizeBtn" class="iconbtn" title="Change lobby size">A</button>
+          <!-- lobbySizeBtn removed -->
         </div>
       </div>
       <div id="roomList"></div>
@@ -386,9 +381,7 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
         </div>
       </div>
       <button id="createRoom" class="createRoom">Create / Join Room</button>
-      <div style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center;max-width:420px">
-        Swipe from the edge to open the room drawer on mobile. Drawer open/close is smooth and fast.
-      </div>
+      <!-- 'Swipe...' paragraph removed as requested -->
     </main>
 
   </div>
@@ -451,10 +444,11 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
 
 <script type="module">
 /* ===================
-   Minimal, targeted changes applied for:
-   - How To removed from DOM & guarded in JS
-   - Mobile mode disabled (desktop-only): isMobile = false
-   Everything else left intact.
+   Adjusted per request:
+   - 'Swipe...' text removed
+   - lobby size changing UI & JS removed
+   - logo fixed to a stable viewport position (#logo)
+   - otherwise untouched (desktop behavior preserved)
    =================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -472,9 +466,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* DOM refs */
-const howBtn = document.getElementById('howBtn'); // will be null (How To removed)
-const howMenu = document.getElementById('howMenu'); // will be null (How To removed)
+/* DOM refs (lobbySizeBtn removed intentionally) */
+const howBtn = document.getElementById('howBtn'); // null (How To removed)
+const howMenu = document.getElementById('howMenu'); // null (How To removed)
 const fullBtn = document.getElementById('fullBtn');
 
 const login = document.getElementById('login');
@@ -497,7 +491,6 @@ const nickColorCircle = document.getElementById('nickColorCircle');
 
 const lobby = document.getElementById('homeLeft');
 const lobbyToggle = document.getElementById('lobbyToggle');
-const lobbySizeBtn = document.getElementById('lobbySizeBtn');
 
 const chatSidebar = document.getElementById('chatSidebar');
 const sidebarToggle = document.getElementById('sidebarToggle');
@@ -505,7 +498,6 @@ const sidebarToggle = document.getElementById('sidebarToggle');
 const openLobbyBtn = document.getElementById('openLobbyBtn');
 const mobileOverlay = document.getElementById('mobileOverlay');
 const mobileDrawer = document.getElementById('mobileDrawer');
-const closeDrawer = document.getElementById('closeDrawer');
 
 const chat = document.getElementById('chat');
 const chatWrapperMain = document.getElementById('chatWrapperMain');
@@ -542,22 +534,19 @@ let lastMessageTime = 0;
 let typingTimeout = null;
 let messagesUnsub = null;
 let typingUnsub = null;
-let roomsUnsub = null; // <--- listener for rooms collection
+let roomsUnsub = null;
 
-/* cache for user docs to avoid repeated reads */
 const userCache = new Map();
 
-/* Device detection */
-/* MOBILE DISABLED: force desktop-only. This preserves desktop UI and avoids running mobile code. */
+/* Force desktop-only to avoid mobile behaviors */
 const isTouch = matchMedia('(pointer:coarse)').matches;
-const isMobile = false; // <-- forced desktop-only
+const isMobile = false; // forced desktop-only
 
 /* UI init */
 nickColorInput.value = nickColor;
 nickColorCircle.style.background = nickColor;
 nickInput.value = localStorage.getItem('nick') || '';
 
-/* Ensure desktop lobby visible and cannot be collapsed */
 function enforceDesktopLobby(){
   if(!isMobile){
     lobby.style.display = 'block';
@@ -571,15 +560,11 @@ function enforceDesktopLobby(){
 }
 enforceDesktopLobby();
 
-/* === EDGE-SWIPE handlers removed from active path by isMobile = false: they stay defined but won't trigger on desktop */
-/* (original code left intact but inactive when isMobile is false) */
-
 /* Session helpers */
 function showHome(){
   login.style.display = 'none';
   home.style.display = 'flex';
   main.style.display = 'none';
-  // show top-right controls on home
   if(howBtn) howBtn.style.display = '';
   if(fullBtn) fullBtn.style.display = '';
   if(settingsBtn) settingsBtn.style.display = '';
@@ -591,7 +576,6 @@ function showLogin(){
   home.style.display = 'none';
   main.style.display = 'none';
   localStorage.removeItem('session');
-  // hide top-right controls on login screen
   if(howBtn) howBtn.style.display = 'none';
   if(fullBtn) fullBtn.style.display = 'none';
   if(settingsBtn) settingsBtn.style.display = 'none';
@@ -602,7 +586,6 @@ function showMain(){
   login.style.display = 'none';
   home.style.display = 'none';
   main.style.display = 'flex';
-  // show top-right controls on main
   if(howBtn) howBtn.style.display = '';
   if(fullBtn) fullBtn.style.display = '';
   if(settingsBtn) settingsBtn.style.display = '';
@@ -614,7 +597,6 @@ function showMain(){
 if(localStorage.getItem('session')) showHome();
 else showLogin();
 
-/* update whether nickname is editable (guest cannot change) */
 function updateNickEditable(){
   const session = localStorage.getItem('session') || '';
   if(session.startsWith('Guest')){
@@ -634,13 +616,12 @@ function updateNickEditable(){
   }
 }
 
-/* HOW TO toggle handlers — guarded because How To removed from DOM */
+/* HOW TO handlers (guarded — How To removed) */
 if(howBtn && howMenu){
   howBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = howMenu.classList.toggle('show');
     howMenu.setAttribute('aria-hidden', !open);
-    // hide settings/profile/context when opening
     if(open){
       settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true');
       profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
@@ -678,7 +659,6 @@ if(settingsBtn){
     const open = settingsMenu.classList.toggle('show');
     settingsMenu.setAttribute('aria-hidden', !open);
     profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
-    // hide how menu if open
     if(howMenu){ howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
   });
 }
@@ -692,9 +672,7 @@ document.addEventListener('click', () => {
     profileCard.classList.remove('show');
     profileCard.setAttribute('aria-hidden','true');
   }
-  // hide context menu too
   if(contextMenu.style.display === 'block') contextMenu.style.display = 'none';
-  // hide How To panel if present
   if(howMenu && howMenu.classList.contains('show')){ howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
 });
 
@@ -716,7 +694,6 @@ if(settingsDelete) settingsDelete.addEventListener('click', async () => {
     users = JSON.parse(localStorage.getItem('users')||'{}');
     delete users[session];
     localStorage.setItem('users', JSON.stringify(users));
-    // remove Firestore user doc if you want (optional)
     await deleteDoc(doc(db,'users',session)).catch(()=>{});
   }catch(e){}
   localStorage.removeItem('session');
@@ -747,7 +724,6 @@ nickColorCircle.addEventListener('click', ()=> {
 nickColorInput.addEventListener('input', async ()=>{ 
   nickColorCircle.style.background = nickColorInput.value;
   localStorage.setItem('nickColor', nickColorInput.value);
-  // update Firestore users doc if logged in
   const session = localStorage.getItem('session') || '';
   if(session && !session.startsWith('Guest')){
     try{ await setDoc(doc(db,'users',session), { color: nickColorInput.value, joined: serverTimestamp() }, { merge: true }); userCache.set(session, { color: nickColorInput.value }); }catch(e){}
@@ -756,9 +732,9 @@ nickColorInput.addEventListener('input', async ()=>{
 
 /* rooms load/render */
 async function loadRooms(){
-  roomList.innerHTML = '';
-  roomListSidebar.innerHTML = '';
-  roomListMobile.innerHTML = '';
+  if(roomList) roomList.innerHTML = '';
+  if(roomListSidebar) roomListSidebar.innerHTML = '';
+  if(roomListMobile) roomListMobile.innerHTML = '';
   try{
     const s = await getDocs(collection(db,'rooms'));
     s.forEach(r => renderRoomEntry(r.id));
@@ -766,15 +742,16 @@ async function loadRooms(){
 }
 function renderRoomEntry(id){
   const createEl = (container) => {
+    if(!container) return;
     const d = document.createElement('div');
     d.className = 'room';
     d.textContent = '# ' + id;
     d.onclick = ()=> joinRoom(id);
     container.appendChild(d);
   };
-  if(roomList) createEl(roomList);
-  if(roomListSidebar) createEl(roomListSidebar);
-  if(roomListMobile) createEl(roomListMobile);
+  createEl(roomList);
+  createEl(roomListSidebar);
+  createEl(roomListMobile);
 }
 
 /* NEW: real-time rooms listener so rooms appear immediately */
@@ -791,7 +768,6 @@ function setupRoomsListener(){
       });
     }, err => {
       console.error('rooms listener error', err);
-      // fallback to one-time load if realtime fails
       loadRooms().catch(()=>{});
     });
   }catch(e){
@@ -820,7 +796,6 @@ async function joinRoom(r){
   const pass = prompt('Password');
   if(pass !== snap.data().password) return alert('Wrong room password');
 
-  // Save nick/color
   nick = nickInput.value || ('Anon'+Math.floor(Math.random()*1000));
   const session = localStorage.getItem('session') || '';
   if(session.startsWith('Guest')){
@@ -831,7 +806,6 @@ async function joinRoom(r){
   localStorage.setItem('nick', nick);
   localStorage.setItem('nickColor', nickColor);
 
-  // If mobile & drawer open -> animate drawer close smoothly, THEN enter room
   const durationMs = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--drawer-duration')) || 200;
   const drawerOpen = mobileDrawer && mobileDrawer.classList.contains('show');
   if(isMobile && drawerOpen){
@@ -853,15 +827,12 @@ async function enterRoom(r){
   showMain();
   room = r;
   roomName.textContent = '# ' + r;
-  // cleanup previous listeners
   if(messagesUnsub) messagesUnsub();
   if(typingUnsub) typingUnsub();
 
-  // clear chat area
   chat.innerHTML = '';
   lastMessageTime = Date.now();
 
-  // incremental messages snapshot using docChanges
   const msgsQuery = query(collection(db,'rooms',room,'messages'), orderBy('time'));
   messagesUnsub = onSnapshot(msgsQuery, snap => {
     const shouldScroll = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 160;
@@ -870,7 +841,6 @@ async function enterRoom(r){
       const m = d.data();
       if(change.type === 'added'){
         renderMessage(d.id, m);
-        // mark as seen for this user (only for new messages)
         const localNick = localStorage.getItem('nick') || nick;
         if(localNick){
           setDoc(doc(db, 'rooms', room, 'messages', d.id, 'seen', localNick), {name: localNick, t: serverTimestamp()}).catch(()=>{});
@@ -881,16 +851,14 @@ async function enterRoom(r){
         removeMessage(d.id);
       }
     });
-    // use RAF to make autoscroll robust (fixes missed scrolls)
     requestAnimationFrame(() => scrollChatToBottom());
   });
 
-  // typing snapshot (robust handling of timestamp field)
   typingUnsub = onSnapshot(collection(db,'rooms',room,'typing'), snap => {
     const now = Date.now();
     const usersTyping = [];
     snap.forEach(d=> {
-      if(d.id === (localStorage.getItem('nick')||nick)) return; // skip self
+      if(d.id === (localStorage.getItem('nick')||nick)) return;
       const tField = d.data().t;
       let tMs = null;
       if(tField && typeof tField.toMillis === 'function') tMs = tField.toMillis();
@@ -898,24 +866,16 @@ async function enterRoom(r){
       else if(tField && typeof tField._seconds === 'number') tMs = (tField._seconds*1000) + (tField._nanoseconds ? Math.floor(tField._nanoseconds/1e6) : 0);
       if(tMs && (now - tMs) < 4000) usersTyping.push(d.id);
     });
-
-    // render stylish indicator (with controlled animation restarts)
     renderTypingIndicator(usersTyping);
   });
 }
 
-/* --- Animation restart control vars:
-   We avoid restarting the dot animation on every typing heartbeat (otherwise it's too snappy).
-   Restart only when the set of users changes OR if enough time has passed since last restart.
-*/
+/* Animation restart control vars */
 let _lastTypingKey = '';
 let _lastTypingAnimRestart = 0;
-const TYPING_ANIM_MIN_RESTART_INTERVAL = 1200; // ms; don't restart animation more often than this unless users changed
+const TYPING_ANIM_MIN_RESTART_INTERVAL = 1200;
 
-/* renderTypingIndicator: shows avatars + animated dots + text (up to 4 users)
-   Uses userCache for colors where possible; falls back to guest gray.
-   Animation will be restarted only when users list changes OR minimum interval elapsed.
-*/
+/* renderTypingIndicator */
 function renderTypingIndicator(usersTyping){
   if(!usersTyping || usersTyping.length === 0){
     typingIndicator.style.display = 'none';
@@ -923,26 +883,19 @@ function renderTypingIndicator(usersTyping){
     _lastTypingKey = '';
     return;
   }
-
-  // build key (order-stable)
   const sorted = [...usersTyping].sort();
   const key = sorted.join(',');
-
-  // limit to first 4 avatars
   const showAvs = usersTyping.slice(0,4);
   const avatarsHtml = showAvs.map(n => {
     const color = (userCache.get(n) && userCache.get(n).color) ? userCache.get(n).color : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
     return `<div class="typ-av" style="background:${color}">${escapeHtml((n||'?')[0]||'?')}</div>`;
   }).join('');
-
-  // text
   let txt = '';
   if(usersTyping.length === 1) txt = `${escapeHtml(usersTyping[0])} kirjoittaa`;
   else if(usersTyping.length === 2) txt = `${escapeHtml(usersTyping[0])} ja ${escapeHtml(usersTyping[1])} kirjoittavat`;
   else if(usersTyping.length === 3) txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${escapeHtml(usersTyping[2])} kirjoittavat`;
   else txt = `${escapeHtml(usersTyping[0])}, ${escapeHtml(usersTyping[1])} ja ${usersTyping.length-2} muuta kirjoittavat`;
 
-  // set HTML
   typingIndicator.innerHTML = `
     <div class="typing-avatars">
       ${avatarsHtml}
@@ -954,22 +907,17 @@ function renderTypingIndicator(usersTyping){
   `;
   typingIndicator.style.display = 'flex';
 
-  // Decide whether to restart the dot animation.
-  // Restart if users changed (key different) OR if enough time passed since last restart (to keep it fresh occasionally).
   const now = Date.now();
   const needRestart = (key !== _lastTypingKey) || (now - _lastTypingAnimRestart > TYPING_ANIM_MIN_RESTART_INTERVAL);
 
   if(needRestart){
-    // restart by cloning the dots node (clean restart of CSS animations)
     const dots = typingIndicator.querySelector('.typing-dots');
     if(dots && dots.parentNode){
       const clone = dots.cloneNode(true);
-      // small microtask delay ensures DOM update and avoids jank
       dots.parentNode.replaceChild(clone, dots);
       _lastTypingAnimRestart = now;
     }
   }
-
   _lastTypingKey = key;
 }
 
@@ -979,12 +927,9 @@ function makeMessageElement(id, m){
   el.className = 'message';
   el.dataset.msgid = id;
   el.dataset.owner = m.name;
-
   const replyHtml = m.reply?`<div class="reply-preview"><b>${escapeHtml(m.reply.name)}</b>: ${escapeHtml(m.reply.text)}</div>`:'';
   const safeTextHtml = linkify(escapeHtml(m.text || ''));
   const editedNoteHtml = m.editedNote ? `<span class="edited-note">${escapeHtml(m.editedNote)}</span>` : '';
-
-  // Build inner message WITHOUT reply button when mobile.
   let msgInner = `
     <div class="avatar" style="background:${m.color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim()}">${escapeHtml((m.name||'?')[0]||'?')}</div>
     <div class="msg">
@@ -994,10 +939,7 @@ function makeMessageElement(id, m){
       <div class="msg-text">${safeTextHtml}${editedNoteHtml}</div>
     </div>
   `;
-
   el.innerHTML = msgInner;
-
-  // Add reply button ONLY for non-mobile (desktop)
   if(!isMobile){
     const replyBtn = document.createElement('div');
     replyBtn.className = 'reply-btn';
@@ -1006,8 +948,6 @@ function makeMessageElement(id, m){
     replyBtn.textContent = 'reply';
     el.querySelector('.msg').appendChild(replyBtn);
   }
-
-  // Add the three-dot MORE button for own messages (desktop only)
   const localNick = localStorage.getItem('nick') || nick;
   if(m.name === localNick && !isMobile){
     const msgInnerEl = el.querySelector('.msg');
@@ -1018,13 +958,10 @@ function makeMessageElement(id, m){
     moreBtn.addEventListener('click', (ev) => {
       ev.stopPropagation();
       const rect = moreBtn.getBoundingClientRect();
-      // show the same context menu but positioned near the button
       showEditDeleteMenu(Math.round(rect.left + 8), Math.round(rect.bottom + 6), id, m.text);
     });
     msgInnerEl.appendChild(moreBtn);
   }
-
-  // attach interactions
   const senderEl = el.querySelector('.msg-sender');
   if(senderEl){
     if(!isMobile){
@@ -1070,8 +1007,6 @@ function makeMessageElement(id, m){
       });
     }
   }
-
-  // hover to show who has seen this message
   el.addEventListener('mouseenter', async (ev)=>{
     if(m.name === (localStorage.getItem('nick')||nick)) return;
     const rect = el.getBoundingClientRect();
@@ -1089,11 +1024,8 @@ function makeMessageElement(id, m){
   });
   el.addEventListener('mouseleave', ()=>{ tooltip.style.display = 'none'; tooltip.setAttribute('aria-hidden','true'); });
 
-  // attach mobile interactions including swipe-to-reply and long-press edit/delete
-  // Since isMobile === false, attachMobileInteractions will not add mobile-only behavior that affects desktop.
   attachMobileInteractions(el, id, m);
 
-  // reply button click handler (desktop only)
   el.querySelectorAll('.reply-btn').forEach(b => b.addEventListener('click', (e)=>{
     replyTo = { name: b.dataset.name, text: b.dataset.text };
     replyBox.style.display = 'block';
@@ -1105,7 +1037,6 @@ function makeMessageElement(id, m){
 }
 
 function renderMessage(id, m){
-  // skip if already exists
   if(chat.querySelector(`[data-msgid="${id}"]`)) return;
   const el = makeMessageElement(id, m);
   chat.appendChild(el);
@@ -1125,12 +1056,9 @@ function updateMessage(id, m){
   if(sender) { sender.textContent = m.name; sender.style.color = m.color || '#999'; }
   if(time) time.textContent = m.time?.toMillis ? new Date(m.time.toMillis()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
   if(msgText) msgText.innerHTML = safeTextHtml + editedNoteHtml;
-  // reply preview update
   const replyPrev = el.querySelector('.reply-preview');
   if(replyPrev && !m.reply) replyPrev.remove();
   else if(!replyPrev && m.reply) el.querySelector('.msg').insertAdjacentHTML('afterbegin', replyHtml);
-
-  // ensure more-btn exists for own messages (desktop only)
   const localNick = localStorage.getItem('nick') || nick;
   const hasMore = !!el.querySelector('.more-btn');
   if(m.name === localNick && !isMobile && !hasMore){
@@ -1156,10 +1084,9 @@ function removeMessage(id){
   if(el) el.remove();
 }
 
-/* context menu implementation (dropdown on three-dots / replaced right-click / long-press) */
+/* context menu implementation */
 function showEditDeleteMenu(x,y,msgId, currentText){
   contextMenu.innerHTML = '';
-  // Edit
   const editBtn = document.createElement('button');
   editBtn.textContent = 'Edit';
   editBtn.onclick = async (ev)=>{
@@ -1170,7 +1097,6 @@ function showEditDeleteMenu(x,y,msgId, currentText){
     hideContextMenu();
   };
   contextMenu.appendChild(editBtn);
-  // Delete
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
   delBtn.onclick = async (ev)=>{
@@ -1182,7 +1108,6 @@ function showEditDeleteMenu(x,y,msgId, currentText){
   };
   contextMenu.appendChild(delBtn);
 
-  // position
   const pad = 6;
   const menuWidth = 180;
   const menuHeight = 80;
@@ -1200,34 +1125,24 @@ function hideContextMenu(){
   contextMenu.setAttribute('aria-hidden','true');
 }
 
-/* mobile interactions: long-press -> edit/delete for own; smooth swipe right -> reply
-   CHANGE: Move the ENTIRE .message element on mobile swipe (so the whole message translates).
-   Long-press still opens Edit/Delete for own messages.
-   Guard 'replyPreviewShownFor' prevents multiple reply previews showing per-swipe.
-   Since isMobile is forced false, these interactions will not affect desktop.
-*/
+/* mobile interactions (inactive because isMobile=false) */
 function attachMobileInteractions(el, msgId, messageData){
   if(!el) return;
   let longPressTimer = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let draggingLocal = false;
-  let replyPreviewShownFor = false; // guard to avoid multiple previews
-
+  let replyPreviewShownFor = false;
   el.addEventListener('touchstart', (e)=>{
     const t = e.touches[0];
     touchStartX = t.clientX; touchStartY = t.clientY;
     draggingLocal = false;
     replyPreviewShownFor = false;
-
-    // show context menu at touch coords on long-press for own messages
     if(messageData.name === (localStorage.getItem('nick')||nick)){
       longPressTimer = setTimeout(()=> {
         showEditDeleteMenu(Math.round(touchStartX - 80), Math.round(touchStartY + 6), msgId, messageData.text);
       }, 650);
     }
-
-    // clear any previous transition so movement is smooth
     el.style.transition = 'none';
   }, {passive:true});
 
@@ -1235,7 +1150,6 @@ function attachMobileInteractions(el, msgId, messageData){
     const t = e.touches[0];
     const dx = t.clientX - touchStartX;
     const dy = t.clientY - touchStartY;
-    // if vertical motion dominates, cancel
     if(Math.abs(dy) > Math.abs(dx)){
       if(longPressTimer) clearTimeout(longPressTimer);
       return;
@@ -1246,20 +1160,16 @@ function attachMobileInteractions(el, msgId, messageData){
     }
     if(draggingLocal){
       e.preventDefault();
-      const capped = Math.min(Math.max(dx, 0), 160); // only allow right swipe, cap to 160px
-      // Move the entire message element
+      const capped = Math.min(Math.max(dx, 0), 160);
       el.style.transform = `translateX(${capped}px)`;
       el.style.willChange = 'transform';
-
-      // show preview ONCE when threshold crossed
       if(capped > 36 && !replyPreviewShownFor){
         replyPreviewShownFor = true;
-        replyTo = { name: messageData.name, text: messageData.text }; // prepare reply
+        replyTo = { name: messageData.name, text: messageData.text };
         replyBox.style.display = 'block';
         replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
         const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
       } else if(capped <= 36 && replyPreviewShownFor){
-        // if user drags back under threshold, hide preview and reset guard
         replyPreviewShownFor = false;
         replyTo = null;
         replyBox.style.display = 'none';
@@ -1269,26 +1179,22 @@ function attachMobileInteractions(el, msgId, messageData){
 
   el.addEventListener('touchend', ()=>{
     if(longPressTimer) clearTimeout(longPressTimer);
-    // determine px moved from transform
     let px = 0;
     const tr = el.style.transform;
     if(tr){
       const m = tr.match(/translateX\((-?\d+(\.\d+)?)px\)/);
       px = m ? parseInt(m[1],10) : 0;
     }
-    // reset transforms with smooth transition
     el.style.transition = 'transform 180ms ease';
     el.style.transform = '';
     setTimeout(()=>{ el.style.transition = ''; el.style.willChange = ''; }, 200);
 
     if(px > 60){
-      // completed swipe -> finalise reply (replyBox already shown due to guard)
       replyTo = replyTo || { name: messageData.name, text: messageData.text };
       replyBox.style.display = 'block';
       replyBox.innerHTML = `Replying to <b>${escapeHtml(replyTo.name)}</b> <button id="cancelReply" style="margin-left:8px">x</button>`;
       const btn = document.getElementById('cancelReply'); if(btn) btn.onclick = cancelReply;
     } else {
-      // cancelled, ensure hidden
       replyTo = null;
       replyBox.style.display = 'none';
       replyPreviewShownFor = false;
@@ -1330,13 +1236,11 @@ if(msg){
     if(!room){ alert('You are not in a room'); return; }
     deleteDoc(doc(db,'rooms',room,'typing',localStorage.getItem('nick')||nick)).catch(()=>{});
 
-    // Commands handling
     if(textRaw.startsWith('/')){
       await handleCommand(textRaw);
       return;
     }
 
-    // compute color deterministically
     const colorToSend = (localStorage.getItem('session') && !localStorage.getItem('session').startsWith('Guest')) ? (localStorage.getItem('nickColor') || '#58a6ff') : getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
 
     await addDoc(collection(db,'rooms',room,'messages'), {
@@ -1350,7 +1254,7 @@ if(msg){
   });
 }
 
-/* Helper: robust autoscroll (used after updates) */
+/* Helper: robust autoscroll */
 function scrollChatToBottom(force = false){
   if(force){
     chat.scrollTop = chat.scrollHeight;
@@ -1362,9 +1266,9 @@ function scrollChatToBottom(force = false){
   }
 }
 
-/* Helper: chunked batch deletes (handles >500 deletes safely) */
+/* Helper: chunked batch deletes */
 async function deleteDocsInBatches(refs){
-  const CHUNK = 400; // safe chunk under Firestore limit
+  const CHUNK = 400;
   let i = 0;
   while(i < refs.length){
     const b = writeBatch(db);
@@ -1379,7 +1283,6 @@ async function deleteDocsInBatches(refs){
 async function handleCommand(cmdText){
   const parts = cmdText.split(/\s+/);
   const c = parts[0].toLowerCase();
-  // help: visible only to you -> show via alert
   if(c === '/help'){
     const helpText = [
       "Commands:",
@@ -1394,7 +1297,6 @@ async function handleCommand(cmdText){
     alert(helpText);
     return;
   }
-
   if(c === '/roll'){
     let n = 1; if(parts[1]) n = Math.min(10, Math.max(1, parseInt(parts[1])||1));
     const rolls = [];
@@ -1419,8 +1321,6 @@ async function handleCommand(cmdText){
     await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:txt, color:'#888', time:serverTimestamp()});
     return;
   }
-
-  // /clear: delete messages (ask for confirmation) -> use batched deletes
   if(c === '/clear'){
     if(!confirm('Delete all messages in this room?')) return;
     try{
@@ -1435,31 +1335,20 @@ async function handleCommand(cmdText){
     }catch(e){ console.error('/clear error', e); }
     return;
   }
-
-  // /delete or /delet: delete room and messages (ask for confirmation) -> use batched deletes
   if(c === '/delete' || c === '/delet'){
     if(!confirm('Delete the room and all messages?')) return;
     try{
-      // delete typing docs
       const typingDocs = await getDocs(collection(db,'rooms',room,'typing'));
       const refsToDelete = [];
       typingDocs.forEach(t => refsToDelete.push(t.ref));
-
-      // delete messages & their seen subcollections
       const msgs = await getDocs(collection(db,'rooms',room,'messages'));
       for(const d of msgs.docs){
         const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen'));
         for(const sd of seenSnap.docs) refsToDelete.push(sd.ref);
         refsToDelete.push(d.ref);
       }
-
-      // perform deletes in batches
       if(refsToDelete.length) await deleteDocsInBatches(refsToDelete);
-
-      // attempt to delete room doc (last)
-      try{ await deleteDoc(doc(db,'rooms',room)); }catch(e){ /* ignore */ }
-
-      // navigate back to home
+      try{ await deleteDoc(doc(db,'rooms',room)); }catch(e){}
       if(messagesUnsub) messagesUnsub();
       if(typingUnsub) typingUnsub();
       room = '';
@@ -1468,8 +1357,6 @@ async function handleCommand(cmdText){
     }catch(e){ console.error('/delete error', e); }
     return;
   }
-
-  // unknown command -> echo to system
   await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
 }
 
@@ -1484,13 +1371,14 @@ const emojiList = [
 ];
 
 function buildEmojiPicker(){
+  if(!emojiPicker) return;
   emojiPicker.innerHTML = '';
   const grid = document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px';
   emojiPicker.appendChild(grid);
   emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); });
 }
 buildEmojiPicker();
-emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
+if(emojiBtn) emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
 
 /* back button */
 if(back){
@@ -1504,35 +1392,7 @@ if(back){
   };
 }
 
-/* lobby size (kept) */
-const LOBBY_SIZES = [
-  {name:'small', width:'120px'},
-  {name:'normal', width:'260px'},
-  {name:'large', width:'360px'}
-];
-let lobbySizeIndex = parseInt(localStorage.getItem('lobbySizeIndex')||'1',10);
-applyLobbySize();
-
-if(lobbySizeBtn) lobbySizeBtn.addEventListener('click', ()=> {
-  lobbySizeIndex = (lobbySizeIndex + 1) % LOBBY_SIZES.length;
-  applyLobbySize();
-  localStorage.setItem('lobbySizeIndex', lobbySizeIndex);
-});
-function applyLobbySize(){
-  const s = LOBBY_SIZES[lobbySizeIndex];
-  document.documentElement.style.setProperty('--lobby-width', s.width);
-  if(lobbySizeBtn) lobbySizeBtn.textContent = s.name[0].toUpperCase();
-  if(isMobile) {
-    const collapse = (s.name === 'small');
-    lobby.classList.toggle('collapsed', collapse);
-    chatSidebar.classList.toggle('collapsed', collapse);
-  } else {
-    lobby.classList.remove('collapsed');
-    chatSidebar.classList.remove('collapsed');
-  }
-}
-
-/* Mobile drawer functions remain but won't be triggered because isMobile=false */
+/* Mobile drawer functions remain but inactive on desktop */
 function openMobileDrawer(){
   if(!mobileOverlay || !mobileDrawer) return;
   mobileOverlay.classList.add('show');
@@ -1575,17 +1435,6 @@ showMain = function(){ origShowMain(); updateOpenLobbyBtnVisibility(); };
 const origShowLogin = showLogin;
 showLogin = function(){ origShowLogin(); updateOpenLobbyBtnVisibility(); };
 
-/* Fast drag + velocity-based flick (kept but inactive on desktop) */
-let dragging = false;
-let startX = 0;
-let lastX = 0;
-let lastT = 0;
-let vx = 0;
-let drawerWidth = 0;
-const EDGE_ZONE = 36;
-const SHORT_THRESHOLD = 30;
-const VELOCITY_THRESHOLD = 0.35;
-
 /* utility helpers */
 function escapeHtml(s){
   if(!s && s !== 0) return '';
@@ -1610,10 +1459,9 @@ function getUserColor(name){
 }
 
 /* =========================
-   NEW: Login (from koodi 2) — replaces previous local-only login
+   Login
    ========================= */
 
-// SHA-256 helper (uses SubtleCrypto)
 async function sha256(text) {
   const data = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -1633,7 +1481,6 @@ if(loginBtn){
       const passHash = await sha256(password);
 
       if(!snap.exists()){
-        // REGISTER
         await setDoc(userRef, {
           passwordHash: passHash,
           created: serverTimestamp(),
@@ -1645,7 +1492,6 @@ if(loginBtn){
         localStorage.setItem('nickColor', '#58a6ff');
 
         loginMsg.textContent = 'Rekisteröity ja kirjautunut 👍';
-        // update UI
         nickInput.value = username;
         nickColorInput.value = '#58a6ff';
         nickColorCircle.style.background = '#58a6ff';
@@ -1653,7 +1499,6 @@ if(loginBtn){
         return;
       }
 
-      // LOGIN
       const data = snap.data();
       if(data.passwordHash === passHash){
         localStorage.setItem('session', username);
@@ -1674,10 +1519,9 @@ if(loginBtn){
   });
 }
 
-loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
+if(loginPass) loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
 
-// Demo/guest button (kept behaviour)
-demoBtn.addEventListener('click', (e) => {
+if(demoBtn) demoBtn.addEventListener('click', (e) => {
   e.preventDefault();
   const g = 'Guest' + Math.floor(Math.random()*9000 + 1000);
   localStorage.setItem('session', g);
@@ -1693,21 +1537,12 @@ demoBtn.addEventListener('click', (e) => {
 /* Ensure rooms are loaded (real-time) */
 setupRoomsListener();
 
-/* =========================
-   End of file
-   ========================= */
-
-/* ========== New global keyboard handling ========== */
-/* Open How To only on bare '?' (no Alt/AltGraph/Ctrl/Meta) and close on Escape
-   Guarded: only attempt How To toggle if howMenu exists (we removed it).
-*/
+/* Global keyboard handling (How To guarded) */
 document.addEventListener('keydown', (e) => {
-  // If user is focused in an input/textarea, don't hijack (except when they press Esc)
   const active = document.activeElement;
   const isTypingField = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
 
   if(e.key === '?' && !e.altKey && !e.ctrlKey && !e.metaKey){
-    // don't open when focus is in input (user probably meant to type '?')
     if(isTypingField) return;
     e.preventDefault();
     if(howMenu){
@@ -1722,7 +1557,6 @@ document.addEventListener('keydown', (e) => {
   }
 
   if(e.key === 'Escape'){
-    // close menus
     if(howMenu && howMenu.classList.contains('show')) { howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
     if(settingsMenu && settingsMenu.classList.contains('show')) { settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); }
     if(profileCard.classList.contains('show')) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); }
