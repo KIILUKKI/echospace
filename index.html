@@ -93,7 +93,26 @@
 #home{display:flex;flex-direction:row}
 
 /* Lobby (left) */
-#homeLeft{width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);position:relative;}
+/* Lobby (left) */
+#homeLeft{
+  width:var(--lobby-width);
+  min-width:120px;
+
+  /* Taustakuva lobbyn paneeliin */
+  background-color:var(--panel);                     /* alkuperäinen väri fallbackiksi */
+  background-image:url("images/echo_space.png"); /* vaihda polku haluamaasi kuvaan */
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  padding:12px;
+  border-right:1px solid #0d1117;
+  height:100%;
+  overflow:auto;
+  transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);
+  position:relative;
+}
+width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);position:relative;}
 #homeLeft.collapsed{width:40px;padding:8px}
 #lobbyHeader{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 #lobbyTitle{flex:1;font-weight:700}
