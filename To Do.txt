@@ -1,2 +1,3 @@
-- viestit eivät automaattisesti alaspäin.
-- Lisää parempi login eg. https://github.com/KIILUKKI/test/blob/main/index.html, jossa kirjautuminen ei ole local vaan irebasen kautta menevä todennus, käyttäen sha-256 salasanan suojausta.
+- viestit eivät mene jostain syystä automaattisesti alaspäin.
+- Lisää parempi login eg. https://github.com/KIILUKKI/test/blob/main/index.html, jossa kirjautuminen ei ole local vaan Firebasen kautta menevä todennus, käyttäen sha-256 salasanan suojausta.
+- 
