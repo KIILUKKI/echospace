@@ -122,10 +122,12 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
   align-items: center;
   position: relative;
   padding: 18px;
-  background-image: url('images/echo_space.png'); /* Päivitetty kuva */
-  background-size: cover;
+  background-image: url('images/echo_space.png');
+  background-size: 200% 200%; /* Kaksi kertaa isompi sekä leveys että korkeus */
   background-repeat: no-repeat;
+  background-position: center; /* Keskittää kuvan */
 }
+
 
 #nickRow {
   display: flex;
