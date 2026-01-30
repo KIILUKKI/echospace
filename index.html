@@ -93,12 +93,72 @@
 #home{display:flex;flex-direction:row}
 
 /* Lobby (left) */
-#homeLeft{width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;border-right:1px solid #0d1117;height:100%;overflow:auto;transition:width 200ms ease,transform 220ms cubic-bezier(.2,.9,.3,1);position:relative;}
-#homeLeft.collapsed{width:40px;padding:8px}
-#lobbyHeader{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-#lobbyTitle{flex:1;font-weight:700}
-.room{padding:10px 12px;border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.room:hover{background:var(--accent);color:#000}
+#homeLeft {
+  width: var(--lobby-width);
+  min-width: 120px;
+  background: var(--panel);
+  padding: 12px;
+  border-right: 1px solid #0d1117;
+  height: 100%;
+  overflow: auto;
+  transition: width 200ms ease, transform 220ms cubic-bezier(.2,.9,.3,1);
+  position: relative; /* tarvitaan logolle absolute sijoittamista varten */
+}
+
+#homeLeft.collapsed {
+  width: 40px;
+  padding: 8px;
+}
+
+/* Lobby header */
+#lobbyHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#lobbyTitle {
+  flex: 1;
+  font-weight: 700;
+}
+
+/* Room items */
+.room {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--card);
+  margin-bottom: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+/* Lobby taustalogo */
+.lobby-logo {
+  position: absolute;    /* suhteessa #homeLeft */
+  top: 50%;              /* keskitetään */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;          /* säädä kokoon */
+  height: auto;
+  opacity: 0.2;          /* kevyt läpikuultavuus */
+  z-index: 0;            /* muut elementit logon päällä */
+}
+
+/* Header ja room-list logon päällä */
+#lobbyHeader,
+#roomList {
+  position: relative;
+  z-index: 1;
+}
+
 
 /* lobby controls */
 #lobbyControls{display:flex;gap:6px;align-items:center;margin-bottom:8px}
@@ -356,19 +416,18 @@
     <div id="loginMsg"></div>
   </div>
 
-  <!-- HOME -->
-  <div id="home">
-    <!-- Desktop lobby (keeps desktop visible) -->
-    <aside id="homeLeft" aria-label="Lobby">
-      <div id="lobbyHeader">
-        <div id="lobbyTitle">Rooms</div>
-        <div id="lobbyControls">
-          <button id="lobbyToggle" class="iconbtn" title="Collapse/Expand lobby">◀</button>
-          <button id="lobbySizeBtn" class="iconbtn" title="Change lobby size">A</button>
-        </div>
-      </div>
-      <div id="roomList"></div>
-    </aside>
+ <aside id="homeLeft" aria-label="Lobby">
+  <img class="lobby-logo" src="images/echo_space.png" alt="Echo Space Logo">
+  
+  <div id="lobbyHeader">
+    <div id="lobbyTitle">Rooms</div>
+    <div id="lobbyControls">
+      <button id="lobbyToggle" class="iconbtn" title="Collapse/Expand lobby">◀</button>
+      <button id="lobbySizeBtn" class="iconbtn" title="Change lobby size">A</button>
+    </div>
+  </div>
+  <div id="roomList"></div>
+</aside>
 
     <!-- Center -->
     <main id="homeCenter">
