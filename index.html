@@ -310,9 +310,6 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
 .mobile-lobby-drawer.show{transform:translateX(0);opacity:1}
 #openLobbyBtn{position:fixed;left:12px;bottom:12px;background:var(--accent);border:none;padding:12px;border-radius:999px;z-index:60;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 
-/* Floating scroll to bottom button (now centered) */
-#scrollBottomBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;background:var(--accent);border:none;padding:10px;border-radius:999px;z-index:99;font-weight:800;color:#000;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);display:none}
-
 /* simple tooltip for seen receipts */
 .tooltip{position:fixed;padding:6px 8px;background:var(--panel);border:1px solid #0d1117;border-radius:8px;font-size:13px;color:var(--muted);z-index:120;display:none}
 
@@ -347,51 +344,12 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
     <button id="settingsDelete">Delete user</button>
   </div>
 
-  <!-- HOW TO PANEL -->
+  <!-- HOW TO PANEL (content is loaded from external how.html) -->
   <div id="howMenu" class="how-menu" aria-hidden="true">
     <h3>How to use — Features & Tips</h3>
-    <div class="section"><b>Getting started</b><br>
-      • Create or join a room using the "Create / Join Room" button.<br>
-      • Pick a nickname and color. Guests are auto-assigned a grey color.</div>
-
-    <div class="section"><b>Rooms</b><br>
-      • Rooms list is on the left (desktop) or in the drawer (mobile).<br>
-      • Use the lobby size control to change left panel width.</div>
-
-    <div class="section"><b>Sending messages</b><br>
-      • Type a message and press Enter to send.<br>
-      • Use the emoji picker (button next to input) to insert emojis.</div>
-
-    <div class="section"><b>Replying</b><br>
-      • Desktop: Hover a message and click "reply" to reply to it.<br>
-      • Mobile: Swipe a message to the right (short swipe reveals reply preview) to start a reply; or tap the reply button.</div>
-
-    <div class="section"><b>Edit & Delete</b><br>
-      • Desktop: Your messages have a three-dot "more" button at the far right — open it for Edit and Delete.<br>
-      • Mobile: Long-press your message to open the Edit/Delete menu.</div>
-
-    <div class="section"><b>Typing & Seen receipts</b><br>
-      • Typing indicator shows who is currently typing in the room.<br>
-      • Hover a message (desktop) to see a tooltip with users who have seen it.</div>
-
-    <div class="section"><b>Keyboard shortcuts (desktop)</b><br>
-      • Esc → Close menus<br>
-      • Ctrl/Cmd + Enter → Send message<br>
-      • ? → Open “How To”</div>
-
-    <div class="section"><b>Mobile specifics</b><br>
-      • Drawer: swipe from the left edge or use the blue button to open the room drawer.<br>
-      • On-screen keyboard: input and reply box move to stay visible; the chat will auto-scroll when appropriate.<br>
-      • Swipe-to-reply now moves the *entire message element* so the reply gesture feels direct and intuitive.</div>
-
-    <div class="section"><b>Desktop specifics</b><br>
-      • Lobby and chat sidebar remain visible; three-dot menus are available for edits.<br>
-      • Hover interactions show profile and seen receipts.</div>
-
-    <div class="section"><b>Account notes</b><br>
-      • Login/Register stores credentials locally (for demo). Guests are labeled "Guest####".<br>
-      • Settings gear lets you logout or delete your account (local storage + optional cloud doc removal).</div>
-
+    <div id="howMenuContent">
+      <!-- Loaded dynamically from how.html -->
+    </div>
     <button id="closeHow" class="close-how">Close</button>
   </div>
 
@@ -401,7 +359,7 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
       <div id="profileAvatar" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;background:var(--guest-gray)"></div>
       <div>
         <div id="profileName" style="font-weight:700"></div>
-        <div id="profileJoined" style="font-size:13px;color:var(--muted)"></div>
+        <!-- joined date intentionally removed per request -->
       </div>
     </div>
     <div class="row"><div>Color</div><div id="profileColor"></div></div>
@@ -498,9 +456,6 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
   <!-- Blue three-line button (mobile) -->
   <button id="openLobbyBtn" title="Open lobby">☰</button>
 
-  <!-- Floating scroll to bottom button (now centered) -->
-  <button id="scrollBottomBtn" title="Scroll to bottom">↓</button>
-
   <!-- tooltip element -->
   <div id="tooltip" class="tooltip" aria-hidden="true"></div>
 
@@ -511,9 +466,11 @@ width:var(--lobby-width);min-width:120px;background:var(--panel);padding:12px;bo
 
 <script type="module">
 /* ===================
-   Minimal, targeted changes applied for:
-   - mobile swipe behavior and fixed reply box,
-   - stylish typing indicator with controlled animation restart logic
+   Minimal, targeted changes applied per user request:
+   - removed scroll-to-bottom button
+   - moved How To content to external file (how.html) and lazy-load it
+   - removed "joined" date from profile card
+   - fixed mobile drawer closing by wiring up overlay/close button and touch handlers
    Everything else left intact.
    =================== */
 
@@ -585,10 +542,8 @@ const settingsDelete = document.getElementById('settingsDelete');
 const profileCard = document.getElementById('profileCard');
 const profileAvatar = document.getElementById('profileAvatar');
 const profileName = document.getElementById('profileName');
-const profileJoined = document.getElementById('profileJoined');
 const profileColor = document.getElementById('profileColor');
 
-const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 const tooltip = document.getElementById('tooltip');
 const contextMenu = document.getElementById('contextMenu');
 
@@ -720,8 +675,8 @@ function updateNickEditable(){
   }
 }
 
-/* HOW TO toggle handlers */
-howBtn.addEventListener('click', (e) => {
+/* HOW TO toggle handlers (lazy-load how.html when first opened) */
+howBtn.addEventListener('click', async (e) => {
   e.stopPropagation();
   const open = howMenu.classList.toggle('show');
   howMenu.setAttribute('aria-hidden', !open);
@@ -730,6 +685,22 @@ howBtn.addEventListener('click', (e) => {
     settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true');
     profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
     contextMenu.style.display = 'none';
+    // lazy-load external how file into container
+    try{
+      const container = document.getElementById('howMenuContent');
+      if(container && !container.dataset.loaded){
+        const res = await fetch('how.html');
+        if(res.ok){
+          const text = await res.text();
+          container.innerHTML = text;
+        } else {
+          container.innerHTML = '<div class="section">Ohjeita ei voitu ladata.</div>';
+        }
+        container.dataset.loaded = '1';
+      }
+    }catch(_){
+      const container = document.getElementById('howMenuContent'); if(container) container.innerHTML = '<div class="section">Ohjeita ei voitu ladata.</div>';
+    }
   }
 });
 document.getElementById('closeHow').addEventListener('click', (e) => {
@@ -804,12 +775,11 @@ settingsDelete.addEventListener('click', async () => {
 });
 
 /* profile card show when hovering (desktop) or clicking (mobile) a name */
-function showProfileCardFor(name, color, joined, anchorEl){
+function showProfileCardFor(name, color, /* joined removed */ anchorEl){
   profileAvatar.textContent = name?.[0] || '?';
   profileAvatar.style.background = color || getComputedStyle(document.documentElement).getPropertyValue('--guest-gray').trim();
   profileName.textContent = name;
   profileColor.textContent = color || '';
-  profileJoined.textContent = joined ? `Joined: ${new Date(joined).toLocaleDateString()}` : '';
   if(anchorEl){
     const r = anchorEl.getBoundingClientRect();
     profileCard.style.top = (r.bottom + 8) + 'px';
@@ -1115,13 +1085,13 @@ function makeMessageElement(id, m){
             const us = await getDoc(doc(db,'users',m.name));
             if(us.exists()){
               const ud = us.data();
-              joined = ud.joined?.toMillis ? new Date(ud.joined.toMillis()) : ud.joined;
+              // joined intentionally not used/displayed
               color = ud.color || color;
               userCache.set(m.name, { color });
             }
           }
         }catch(e){}
-        showProfileCardFor(m.name, color, joined, senderEl);
+        showProfileCardFor(m.name, color, senderEl);
       });
       senderEl.addEventListener('mouseleave', ()=>{
         setTimeout(()=>{ if(document.querySelector(':hover') !== senderEl) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); } }, 120);
@@ -1137,13 +1107,12 @@ function makeMessageElement(id, m){
             const us = await getDoc(doc(db,'users',m.name));
             if(us.exists()){
               const ud = us.data();
-              joined = ud.joined?.toMillis ? new Date(ud.joined.toMillis()) : ud.joined;
               color = ud.color || color;
               userCache.set(m.name, { color });
             }
           }
         }catch(e){}
-        showProfileCardFor(m.name, color, joined, senderEl);
+        showProfileCardFor(m.name, color, senderEl);
       });
     }
   }
@@ -1505,99 +1474,6 @@ async function handleCommand(cmdText){
     }catch(e){ console.error('/clear error', e); }
     return;
   }
-
-  // /delete or /delet: delete room and messages (ask for confirmation) -> use batched deletes
-  if(c === '/delete' || c === '/delet'){
-    if(!confirm('Delete the room and all messages?')) return;
-    try{
-      // delete typing docs
-      const typingDocs = await getDocs(collection(db,'rooms',room,'typing'));
-      const refsToDelete = [];
-      typingDocs.forEach(t => refsToDelete.push(t.ref));
-
-      // delete messages & their seen subcollections
-      const msgs = await getDocs(collection(db,'rooms',room,'messages'));
-      for(const d of msgs.docs){
-        const seenSnap = await getDocs(collection(db,'rooms',room,'messages',d.id,'seen'));
-        for(const sd of seenSnap.docs) refsToDelete.push(sd.ref);
-        refsToDelete.push(d.ref);
-      }
-
-      // perform deletes in batches
-      if(refsToDelete.length) await deleteDocsInBatches(refsToDelete);
-
-      // attempt to delete room doc (last)
-      try{ await deleteDoc(doc(db,'rooms',room)); }catch(e){ /* ignore */ }
-
-      // navigate back to home
-      if(messagesUnsub) messagesUnsub();
-      if(typingUnsub) typingUnsub();
-      room = '';
-      showHome();
-      chat.innerHTML = '';
-    }catch(e){ console.error('/delete error', e); }
-    return;
-  }
-
-  // unknown command -> echo to system
-  await addDoc(collection(db,'rooms',room,'messages'), {name:'System', text:`Unknown command: ${cmdText}`, color:'#888', time:serverTimestamp()});
-}
-
-/* emojis picker */
-const emojiList = [
-"😀","😃","😄","😁","😆","😂","🤣","🙂","🙃","😉","😊","😇",
-"😍","🥰","😘","😗","😙","😚","😋","😛","😜","🤪","😝",
-"🤗","🤭","🤫","🤔","🤨","😐","😑","😶","🙄","😏",
-"😣","😥","😮","😯","😲","😪","😫","🥱","😴","😌",
-"😤","😠","😡","🤬","😢","😭","🥺","😳","😱","😨","😰","😓",
-"👍","👎","👌","✌️","🤞","🤟","🤘","🤙","👋","👏","🙌","🙏"
-];
-
-function buildEmojiPicker(){
-  emojiPicker.innerHTML = '';
-  const grid = document.createElement('div'); grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='6px';
-  emojiPicker.appendChild(grid);
-  emojiList.forEach(e=>{ const d=document.createElement('div'); d.className='emoji'; d.textContent=e; d.onclick=()=>{ msg.value += e; emojiPicker.style.display='none'; msg.focus(); }; grid.appendChild(d); });
-}
-buildEmojiPicker();
-emojiBtn.onclick = ()=> emojiPicker.style.display = emojiPicker.style.display === 'flex' ? 'none' : 'flex';
-
-/* back button */
-back.onclick = ()=>{
-  if(messagesUnsub) messagesUnsub();
-  if(typingUnsub) typingUnsub();
-  showHome();
-  room = '';
-  chat.innerHTML = '';
-  typingIndicator.textContent = '';
-};
-
-/* lobby size (kept) */
-const LOBBY_SIZES = [
-  {name:'small', width:'120px'},
-  {name:'normal', width:'260px'},
-  {name:'large', width:'360px'}
-];
-let lobbySizeIndex = parseInt(localStorage.getItem('lobbySizeIndex')||'1',10);
-applyLobbySize();
-
-lobbySizeBtn.addEventListener('click', ()=> {
-  lobbySizeIndex = (lobbySizeIndex + 1) % LOBBY_SIZES.length;
-  applyLobbySize();
-  localStorage.setItem('lobbySizeIndex', lobbySizeIndex);
-});
-function applyLobbySize(){
-  const s = LOBBY_SIZES[lobbySizeIndex];
-  document.documentElement.style.setProperty('--lobby-width', s.width);
-  lobbySizeBtn.textContent = s.name[0].toUpperCase();
-  if(isMobile) {
-    const collapse = (s.name === 'small');
-    lobby.classList.toggle('collapsed', collapse);
-    chatSidebar.classList.toggle('collapsed', collapse);
-  } else {
-    lobby.classList.remove('collapsed');
-    chatSidebar.classList.remove('collapsed');
-  }
 }
 
 /* Mobile drawer open/close smooth functions */
@@ -1841,34 +1717,16 @@ setupRoomsListener();
    End of file
    ========================= */
 
-/* ========== New global keyboard handling ========== */
-/* Open How To only on bare '?' (no Alt/AltGraph/Ctrl/Meta) and close on Escape */
-document.addEventListener('keydown', (e) => {
-  // If user is focused in an input/textarea, don't hijack (except when they press Esc)
-  const active = document.activeElement;
-  const isTypingField = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+/* --- Additional wiring for mobile drawer buttons and touch handlers --- */
+openLobbyBtn.addEventListener('click', openMobileDrawer);
+closeDrawer.addEventListener('click', closeMobileDrawer);
+mobileOverlay.addEventListener('click', closeMobileDrawer);
 
-  if(e.key === '?' && !e.altKey && !e.ctrlKey && !e.metaKey){
-    // don't open when focus is in input (user probably meant to type '?')
-    if(isTypingField) return;
-    e.preventDefault();
-    const open = howMenu.classList.toggle('show');
-    howMenu.setAttribute('aria-hidden', !open);
-    if(open){
-      settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true');
-      profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true');
-      contextMenu.style.display = 'none';
-    }
-  }
+// allow dragging directly on the drawer to close/open
+mobileDrawer.addEventListener('touchstart', (e)=>{ if(e.touches && e.touches[0]) beginDrag(e.touches[0].clientX, mobileDrawer.classList.contains('show')); }, { passive:true });
+mobileDrawer.addEventListener('touchmove', (e)=>{ if(e.touches && e.touches[0] && dragging) { dragMove(e.touches[0].clientX); e.preventDefault(); } }, { passive:false });
+mobileDrawer.addEventListener('touchend', endDrag);
 
-  if(e.key === 'Escape'){
-    // close menus
-    if(howMenu.classList.contains('show')) { howMenu.classList.remove('show'); howMenu.setAttribute('aria-hidden','true'); }
-    if(settingsMenu.classList.contains('show')) { settingsMenu.classList.remove('show'); settingsMenu.setAttribute('aria-hidden','true'); }
-    if(profileCard.classList.contains('show')) { profileCard.classList.remove('show'); profileCard.setAttribute('aria-hidden','true'); }
-    if(contextMenu.style.display === 'block') { contextMenu.style.display = 'none'; contextMenu.setAttribute('aria-hidden','true'); }
-  }
-});
 </script>
 </body>
 </html>
