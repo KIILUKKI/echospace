@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="256x256" href="images/echo_space_favicon.png">
 <style>
   :root{
     --bg:#0b0f14;
@@ -105,14 +107,70 @@
 .iconbtn:active{transform:scale(0.98)}
 #lobbySizeBtn{font-weight:700;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03)}
 
-/* center */
-#homeCenter{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;padding:18px}
-#nickRow{display:flex;gap:12px;width:100%;max-width:420px;align-items:center;margin-bottom:20px}
-#nick{flex:1;padding:12px;border-radius:10px;border:none;background:var(--card);color:var(--text)}
+/* Home center */
+#homeCenter{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  padding:18px;
+  gap:20px;
+}
+
+/* Home center logo */
+.home-center-logo{
+  max-width:280px;
+  width:100%;
+  opacity:0.9;
+  pointer-events:none;
+  user-select:none;
+}
+
+/* Nick row */
+#nickRow{
+  display:flex;
+  gap:12px;
+  width:100%;
+  max-width:420px;
+  align-items:center;
+}
+
+#nick{
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:var(--card);
+  color:var(--text);
+}
+
 #nick[readonly]{opacity:0.7}
-#nickColorWrapper{width:42px;height:42px;position:relative}
-#nickColorCircle{width:100%;height:100%;border-radius:50%;border:2px solid #fff;cursor:pointer}
-.createRoom{padding:14px 28px;border-radius:12px;background:var(--accent);color:#000;border:none;font-weight:700;cursor:pointer}
+
+#nickColorWrapper{
+  width:42px;
+  height:42px;
+  position:relative;
+}
+
+#nickColorCircle{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  border:2px solid #fff;
+  cursor:pointer;
+}
+
+.createRoom{
+  padding:14px 28px;
+  border-radius:12px;
+  background:var(--accent);
+  color:#000;
+  border:none;
+  font-weight:700;
+  cursor:pointer;
+}
 
 /* MAIN chat */
 #main{display:flex;flex-direction:column}
@@ -355,19 +413,30 @@
     <div id="loginMsg"></div>
   </div>
 
-  <!-- HOME -->
-  <div id="home">
-    <!-- Desktop lobby (keeps desktop visible) -->
-    <aside id="homeLeft" aria-label="Lobby">
-      <div id="lobbyHeader">
-        <div id="lobbyTitle">Rooms</div>
-        <div id="lobbyControls">
-          <button id="lobbyToggle" class="iconbtn" title="Collapse/Expand lobby">◀</button>
-          <button id="lobbySizeBtn" class="iconbtn" title="Change lobby size">A</button>
-        </div>
-      </div>
-      <div id="roomList"></div>
-    </aside>
+<!-- Home Center -->
+<div id="homeCenter">
+
+  <!-- Logo -->
+  <img
+    src="images/echo_space.png"
+    alt="Echo Space"
+    class="home-center-logo"
+  >
+
+  <!-- Nick -->
+  <div id="nickRow">
+    <input id="nick" placeholder="Your nickname">
+    <div id="nickColorWrapper">
+      <div id="nickColorCircle"></div>
+    </div>
+  </div>
+
+  <!-- Create room -->
+  <button class="createRoom">Create Room</button>
+
+</div>
+
+
 
     <!-- Center -->
     <main id="homeCenter">
